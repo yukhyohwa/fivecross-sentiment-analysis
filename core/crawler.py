@@ -88,6 +88,18 @@ def scrape_taptap(page, url, source, cutoff_date, game_key):
         page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
         time.sleep(random.uniform(2, 4))
         
+        # Check for "Expand hidden reviews" button (TapTap "Collapsed" reviews)
+        # Selectors might vary, trying common ones
+        try:
+            # Look for button containing text indicating collapsed reviews
+            expand_btn = page.locator("xpath=//button[contains(., '已收起')] | //div[contains(@class, 'switch-btn')]").first
+            if expand_btn.count() > 0 and expand_btn.is_visible():
+                print(f"  [{source}] Clicking expand hidden reviews button...")
+                expand_btn.click()
+                time.sleep(2)
+        except:
+            pass
+        
         review_elements = page.locator(".review-item__content").all()
         current_count = len(review_elements)
         print(f"  [{source}] Found {current_count} reviews...")
