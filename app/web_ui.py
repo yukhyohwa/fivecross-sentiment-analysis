@@ -112,10 +112,26 @@ with st.sidebar:
     st.caption(f"当前项目: {selected_game_name}")
     st.markdown("---")
     
+    # Date Filter
+    st.subheader("📅 时间筛选")
+    today = pd.Timestamp.now().date()
+    # Default to last 2 years (approx) or max available
+    start_date = st.date_input("开始日期", today - pd.Timedelta(days=730))
+    end_date = st.date_input("结束日期", today)
+    
     menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "🕷️ 爬虫控制", "🔧 配置管理"])
     st.markdown("---")
 
 df = load_data(selected_game_key)
+
+# Apply Date Filter
+if not df.empty and 'review_date' in df.columns:
+    # Convert inputs to datetime
+    s_dt = pd.to_datetime(start_date)
+    e_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1) # End of day
+    
+    mask = (df['review_date'] >= s_dt) & (df['review_date'] <= e_dt)
+    df = df.loc[mask]
 
 if menu == "📊 总览大屏":
     st.title(f"📊 {selected_game_name} - 舆情总览")
@@ -155,18 +171,34 @@ if menu == "📊 总览大屏":
              # Chinese segmentation
              cut_text = " ".join(jieba.cut(full_text))
              
-             # Use a common Chinese font if possible
-             font_path = "C:/Windows/Fonts/msyh.ttc" 
+             # Font Selection logic for Cloud/Local
+             font_path = None
+             potential_paths = [
+                 "C:/Windows/Fonts/msyh.ttc", # Windows
+                 "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc", # Linux (Debian/Ubuntu) - ZenHei
+                 "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", # Linux Noto
+                 "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"
+             ]
+             
+             for p in potential_paths:
+                 if os.path.exists(p):
+                     font_path = p
+                     break
+             
              try:
-                 wc = WordCloud(
-                    font_path=font_path, 
-                    width=1000, 
-                    height=400, 
-                    background_color='white', 
-                    collocations=False,
-                    max_words=150
-                ).generate(cut_text)
-             except:
+                 wc_args = {
+                    "width": 1000, 
+                    "height": 400, 
+                    "background_color": 'white', 
+                    "collocations": False,
+                    "max_words": 150
+                 }
+                 if font_path:
+                     wc_args["font_path"] = font_path
+                     
+                 wc = WordCloud(**wc_args).generate(cut_text)
+             except Exception as e:
+                 st.error(f"WordCloud Error: {e}")
                  # Fallback
                  wc = WordCloud(width=1000, height=400, background_color='white').generate(cut_text)
              
@@ -285,10 +317,11 @@ elif menu == "🕷️ 爬虫控制":
     st.title("🕷️ 爬虫控制台")
     st.info(f"即将抓取项目: **{selected_game_name}**")
     
-    count = st.slider("抓取数量", 10, 200, 30)
+    months = st.slider("抓取时间范围 (过去 N 个月)", 1, 60, 24)
+    
     if st.button("开始抓取", type="primary"):
         with st.status("正在运行爬虫...", expanded=True) as status:
-            log = run_spider_ui(selected_game_key, count)
+            log = run_spider_ui(selected_game_key, months)
             st.text_area("日志", log)
             status.update(label="抓取完成", state="complete")
         
