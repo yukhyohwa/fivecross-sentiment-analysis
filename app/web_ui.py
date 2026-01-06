@@ -278,6 +278,13 @@ elif menu == "🦸 英雄专项":
                                      hero_groups[g_name] = list(g_heroes.keys())
                                  elif isinstance(g_heroes, list):
                                      hero_groups[g_name] = g_heroes
+                                     
+                             # 2026-01-06: User request to move anticipated IPs to "Others" folder
+                             # Remove them from specific groups so they fall into 'ungrouped' logic
+                             anticipated_ips = ["Kaiju No. 8 (怪兽8号)", "JoJo (JOJO)", "Saint Seiya (圣斗士)"]
+                             for ip in anticipated_ips:
+                                 if ip in hero_groups:
+                                     del hero_groups[ip]
                 except: pass
 
             # Create a display map: CodeName -> Display Name (Chinese)
