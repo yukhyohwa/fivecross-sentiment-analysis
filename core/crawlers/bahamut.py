@@ -4,45 +4,39 @@ import time
 from .base import save_review_helper, parse_date
 
 def login_bahamut(page: Page):
-    print("  [bahamut] Attempting login...")
+    print("  [bahamut] Navigating to login page...")
     try:
         page.goto("https://user.gamer.com.tw/login.php")
         
-        # Wait for form
+        print("  [bahamut] Waiting for login form... (If Cloudflare appears, please solve it manually!)")
+        
+        # Wait for the username input to appear. This implies Cloudflare is passed.
         try:
-            page.wait_for_selector("#userid", timeout=10000)
-            print("  [bahamut] Login page loaded.")
+            page.wait_for_selector("#userid", state="visible", timeout=60000)
+            print("  [bahamut] Login form detected!")
         except:
-             print("  [bahamut] Login page not detecting inputs. Cloudflare might be blocking.")
-             time.sleep(5)
+             print("  [bahamut] Timeout waiting for login inputs. Cloudflare might still be blocking.")
+             return
         
         # Fill credentials
-        # Check if already logged in? (Usually redirects if logged in, but login.php might stay)
-        if page.locator("#userid").count() > 0:
-            print("  [bahamut] Filling credentials...")
-            page.fill("#userid", "bahauser1y9")
-            page.fill("#password", "mt1y9999")
+        print("  [bahamut] Auto-filling credentials...")
+        page.fill("#userid", "bahauser1y9")
+        page.fill("#password", "mt1y9999")
             
-            # Click login
-            # Usually strict captcha here. We will fill and let user click or try to click.
-            # Bahamut often uses a draggable slider or hCaptcha.
-            # We will CLICK the button, but if captcha pops up, user needs to solve it.
+        # Click login to trigger potential captcha
+        if page.locator("#btn-login").count() > 0:
+            page.click("#btn-login")
             
-            # Check for 'btn-login'
-            if page.locator("#btn-login").count() > 0:
-                page.click("#btn-login")
-                
-            print("  [bahamut] Credentials filled. Please SOLVE CAPTCHA manually if it appears!")
-            
-            # Wait for login success (redirect to user home or similar)
-            # Or just wait for a known cookie "BAHAID"
-            # We'll give a generous timeout for manual interaction
-            try:
-                # Wait until we see the top bar user name or redirected off login page
-                page.wait_for_url(lambda u: "login.php" not in u, timeout=60000) 
-                print("  [bahamut] Login appeared successful (URL changed).")
-            except:
-                print("  [bahamut] Warning: Login flow timed out. Continuing anyway...")
+        print("  [bahamut] Credentials filled. Please SOLVE CAPTCHA/SLIDER manually now!")
+        print("  [bahamut] Script will wait up to 2 minutes for you to finish login...")
+        
+        # Wait for login success (redirect to user home or similar)
+        try:
+            # Wait until we see the top bar user name or redirected off login page
+            page.wait_for_url(lambda u: "login.php" not in u, timeout=120000) 
+            print("  [bahamut] Login appeared successful (URL changed).")
+        except:
+            print("  [bahamut] Warning: Login flow timed out. Continuing to forum anyway...")
 
     except Exception as e:
         print(f"  [bahamut] Login failed: {e}")
