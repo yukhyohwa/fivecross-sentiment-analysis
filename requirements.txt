@@ -1,0 +1,10 @@
+playwright
+snownlp
+pandas
+matplotlib
+tqdm
+beautifulsoup4
+streamlit
+plotly
+wordcloud
+jieba
