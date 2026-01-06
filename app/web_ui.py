@@ -306,12 +306,29 @@ elif menu == "🦸 英雄专项":
             
             # Group Selection
             selected_group_heroes = list(hero_data.keys())
+            
+            # Calculate all heroes explicitly defined in groups
+            all_configured_heroes = set()
+            if hero_groups:
+                for h_list in hero_groups.values():
+                    all_configured_heroes.update(h_list)
+                    
+            # Find heroes that are present in data but NOT in any config group
+            ungrouped_heroes = [h for h in hero_data.keys() if h not in all_configured_heroes]
+
             if hero_groups:
                 # Groups are sorted keys now
                 group_names = ["全部"] + sorted(list(hero_groups.keys()))
+                
+                # Add "Others" option if there are stragglers
+                if ungrouped_heroes:
+                    group_names.append("其他 - 期待联动")
+                
                 selected_group = st.selectbox("选择IP系列 (Anime Source)", group_names)
                 
-                if selected_group != "全部":
+                if selected_group == "其他 - 期待联动":
+                    selected_group_heroes = ungrouped_heroes
+                elif selected_group != "全部":
                     # Filter heroes belonging to this group
                     allowed_heroes = set(hero_groups[selected_group])
                     selected_group_heroes = [h for h in hero_data.keys() if h in allowed_heroes]
