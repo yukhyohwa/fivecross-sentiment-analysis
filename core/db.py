@@ -39,29 +39,44 @@ def migrate_db():
     try:
         c.execute("ALTER TABLE reviews ADD COLUMN source TEXT")
     except: pass
+    try:
+        c.execute("ALTER TABLE reviews ADD COLUMN video_title TEXT")
+    except: pass
+    try:
+        c.execute("ALTER TABLE reviews ADD COLUMN video_url TEXT")
+    except: pass
+    try:
+        c.execute("ALTER TABLE reviews ADD COLUMN original_date TEXT")
+    except: pass
     conn.commit()
     conn.close()
 
 def save_review(review_data):
     """
-    review_data: dict with id, game_id, author, rating, content, date, source
+    review_data: dict with id, game_id, author, rating, content, date, source, video_title, video_url, original_date
     """
     migrate_db() # Ensure column exists
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     try:
         c.execute('''
-            INSERT OR IGNORE INTO reviews (id, game_id, author, rating, content, review_date, crawled_at, source)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO reviews (
+                id, game_id, author, rating, content, review_date, crawled_at, source, 
+                video_title, video_url, original_date
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             review_data['id'],
             review_data.get('game_id', 'jump_assemble'), # Default fallback
             review_data['author'],
             review_data['rating'],
             review_data['content'],
-            review_data['date'],
+            review_data['date'], # Should be YYYY-MM-DD
             datetime.datetime.now().isoformat(),
-            review_data.get('source', 'taptap_android')
+            review_data.get('source', 'taptap'),
+            review_data.get('video_title', ''),
+            review_data.get('video_url', ''),
+            review_data.get('original_date', '') # Raw text (e.g. "1 year ago")
         ))
         conn.commit()
     except Exception as e:

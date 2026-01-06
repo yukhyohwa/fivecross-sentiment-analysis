@@ -252,6 +252,90 @@
             "Sasuke_Generic": [
                 "佐助"
             ]
+        },
+        "Groups": {
+            "Dragon Ball (龙珠)": [
+                "Goku_SSJ",
+                "Goku_New",
+                "Goku_Generic",
+                "Vegeta",
+                "Trunks",
+                "Frieza",
+                "Buu",
+                "Android18",
+                "Krillin",
+                "Bulma"
+            ],
+            "One Piece (航海王)": [
+                "Luffy_Kid",
+                "Luffy_Adult",
+                "Zoro",
+                "Sanji",
+                "Nami",
+                "Usopp",
+                "Chopper",
+                "Hancock"
+            ],
+            "Naruto (火影忍者)": [
+                "Minato",
+                "Pain",
+                "Sasuke_Shippuden",
+                "Sasuke_Generic",
+                "Naruto_Kid",
+                "Naruto_Adult",
+                "Gaara",
+                "Jiraiya",
+                "Tsunade",
+                "Sakura"
+            ],
+            "Demon Slayer (鬼灭之刃)": [
+                "Tanjiro",
+                "Nezuko",
+                "Zenitsu",
+                "Inosuke",
+                "Shinobu",
+                "Rengoku"
+            ],
+            "Bleach (死神)": [
+                "Ichigo",
+                "Rukia",
+                "Orihime",
+                "Uryu",
+                "Byakuya",
+                "Toshiro",
+                "Yoruichi",
+                "Starrk"
+            ],
+            "Jujutsu Kaisen (咒术回战)": [
+                "Itadori",
+                "Fushiguro",
+                "Nobara",
+                "Gojo",
+                "Nanami",
+                "Inumaki"
+            ],
+            "Hunter x Hunter (全职猎人)": [
+                "Gon",
+                "Killua",
+                "Hisoka"
+            ],
+            "Undead Unluck (不死不幸)": [
+                "Andy",
+                "Fuko"
+            ],
+            "Mashle (马修)": [
+                "Mash",
+                "Lance"
+            ],
+            "Kaiju No. 8 (怪兽8号)": [
+                "Kafka"
+            ],
+            "JoJo (JOJO)": [
+                "Jotaro"
+            ],
+            "Saint Seiya (圣斗士)": [
+                "Aiolia"
+            ]
         }
     }
 }

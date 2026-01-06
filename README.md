@@ -1,51 +1,111 @@
-# Jump Assemble Review Monitor (漫画群星：大集结 舆情监控)
+# FiveCross Sentiment Analysis (舆情监控系统)
 
-This project is a sentiment analysis and monitoring system for "Jump Assemble" (JUMP：群星集结) reviews from TapTap.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Playwright](https://img.shields.io/badge/Playwright-Supported-green)
+![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
-## Features
-1.  **Crawler**: Simulates a real user to scrape reviews from [TapTap](https://www.taptap.cn/app/358933/review) using `playwright`.
-2.  **Database**: Stores reviews in a local SQLite database (`jump_reviews.db`).
-3.  **Analysis**:
-    -   **Sentiment Analysis**: Uses `snownlp` to classify reviews as Positive, Negative, or Neutral.
-    -   **Keyword Extraction**: Identifies mentions of specific characters (e.g., Goku, Naruto, Luffy) and game aspects (Lag, Graphics).
-    -   **Trending**: Generates charts for rating distribution and sentiment.
+A comprehensive sentiment analysis and monitoring system focusing on game reviews from multiple platforms (TapTap CN, TapTap Intl, YouTube, QooApp). Primarily built for "Jump Assemble" (漫画群星：大集结) but extensible for other games.
 
-## Installation
+## ✨ Features
 
-1.  Install Python dependencies:
+- **Multi-Source Crawler**:
+  - **TapTap CN**: Captures reviews from the Chinese store.
+  - **TapTap Intl (Global)**: Supports international reviews with updated "Post Card" structure.
+  - **YouTube**: Incrementally scrapes recent videos and their comments.
+  - **QooApp**: Supports deep scraping via infinite scroll and "View More" handling.
+- **Smart Data Processing**:
+  - **Data Normalization**: Standardizes dates (relative "1 year ago" -> "YYYY-MM-DD").
+  - **Incremental Updates**: Efficiently fetches only new reviews based on time windows.
+  - **Metadata Tracking**: Steps original source text and related video info (for YouTube).
+- **Advanced Analysis**:
+  - **Sentiment Analysis**: Classifies feedback (Positive/Negative/Neutral) using NLP.
+  - **Aspect Mining**: Extracts keywords related to Heroes (e.g., Goku, Luffy) and System (e.g., Lag, Matchmaking).
+  - **Visualization**: Interactive charts for trends, word clouds, and rating distributions.
+
+## 🚀 Installation
+
+1.  **Clone the repository**:
+    ```bash
+    git clone <your-repo-url>
+    cd fivecross-sentiment-analysis
+    ```
+
+2.  **Install dependencies**:
     ```bash
     pip install -r requirements.txt
     ```
-2.  Install Playwright browsers:
+
+3.  **Install Playwright browsers**:
     ```bash
     playwright install chromium
     ```
 
-## Usage
+## 🖥️ Usage
 
-### Web Dashboard (Recommended)
-Launch the interactive dashboard to view data and control the crawler:
-```bash
-streamlit run app.py
-```
-This will open a web interface in your browser where you can:
--   View real-time sentiment analysis and charts.
--   Explore individual reviews with filtering.
--   Start the crawler directly from the "Crawler Control" tab.
+The project provides a unified entry point `main.py` with multiple modes.
 
-### CLI Mode (Optional)
-Run the script solely from the command line:
+### 1. Interactive Menu (Default)
+Simply run the script to choose a mode:
 ```bash
 python main.py
 ```
-This will:
-1.  Launch a browser window and scrape the latest 50 reviews (configurable).
-2.  Save them to the database.
-3.  Perform sentiment analysis and character extraction on new reviews.
-4.  Generate report images (`rating_dist.png`, `sentiment_dist.png`, `review_trend.png`) and print a summary to the console.
 
-## Project Structure
--   `crawler.py`: Handles scraping.
--   `analysis.py`: Handles data processing and visualization.
--   `db.py`: Database schema and operations.
--   `main.py`: Main entry point.
+### 2. Analysis Dashboard (Web UI)
+Launch the visual dashboard to explore data:
+```bash
+python main.py web
+# or
+streamlit run app/web_ui.py
+```
+
+### 3. Crawler (CLI)
+Run the crawler to fetch new data.
+- **Default (Default 2 years)**:
+  ```bash
+  python main.py crawl
+  ```
+- **Incremental (Last 30 days)**:
+  ```bash
+  python main.py crawl --days 30
+  ```
+
+### 4. Analysis Process
+Re-run NLP analysis on existing database records:
+```bash
+python main.py analyze
+```
+
+## 📂 Project Structure
+
+```
+fivecross-sentiment-analysis/
+├── app/
+│   └── web_ui.py          # Streamlit Dashboard application
+├── config/
+│   ├── settings.py        # Crawler & Game configurations
+│   └── heroes.json        # Dynamic hero mapping configuration
+├── core/
+│   ├── crawlers/          # Platform-specific crawler modules
+│   │   ├── base.py        # Shared utilities (saving, date parsing)
+│   │   ├── taptap_cn.py
+│   │   ├── taptap_intl.py
+│   │   ├── youtube.py
+│   │   └── qooapp.py
+│   ├── analysis.py        # NLP & Sentiment analysis logic
+│   ├── crawler.py         # Crawler dispatcher/orchestrator
+│   └── db.py              # SQLite database operations
+├── data/
+│   └── jump_reviews.db    # SQLite Database file
+├── main.py                # Main CLI entry point
+└── requirements.txt       # Project dependencies
+```
+
+## ⚙️ Configuration
+
+- **Game/URL Settings**: Modify `config/settings.py` to add new games or change target URLs.
+- **Hero Mappings**: Update `config/heroes.json` to track new characters or keywords.
+
+## 📝 License
+
+This project is for internal use and monitoring purposes.

@@ -232,6 +232,17 @@ elif menu == "🦸 英雄专项":
         if not hero_data:
             st.warning("暂无特定英雄的反馈数据。")
         else:
+            # Load Groups from heroes.json for filtering
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'heroes.json')
+            hero_groups = {}
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        fc = json.load(f)
+                        if selected_game_key in fc and "Groups" in fc[selected_game_key]:
+                             hero_groups = fc[selected_game_key]["Groups"]
+                except: pass
+
             # Create a display map: CodeName -> Display Name (Chinese)
             display_map = {}
             keywords = GAMES[selected_game_key].get('keywords', {})
@@ -242,52 +253,61 @@ elif menu == "🦸 英雄专项":
                 
             # Try to find a Chinese alias
             for h_code in hero_data.keys():
-                # Find all keys in keywords that map to h_code
                 aliases = [k for k, v in keywords.items() if v == h_code]
-                # Pick the first one that looks like Chinese (or just the first one if strict)
-                # Usually heroes.json puts primary name first, but dict order varies.
-                # Let's try to match with config/heroes.json if we can, but simpler:
-                # Just pick the longest Chinese string, or one that doesn't contain a-z
                 chinese_aliases = [a for a in aliases if not re.search('[a-zA-Z]', a)]
                 if chinese_aliases:
-                   display_map[h_code] = chinese_aliases[0] # Pick first Chinese alias
+                   display_map[h_code] = chinese_aliases[0]
                 elif aliases:
                    display_map[h_code] = aliases[0]
             
-            # Sort by Display Name
-            sorted_heroes = sorted(hero_data.keys(), key=lambda x: display_map[x])
+            # Group Selection
+            selected_group_heroes = list(hero_data.keys())
+            if hero_groups:
+                group_names = ["全部"] + list(hero_groups.keys())
+                selected_group = st.selectbox("选择IP系列 (Anime Source)", group_names)
+                
+                if selected_group != "全部":
+                    # Filter heroes belonging to this group
+                    allowed_heroes = set(hero_groups[selected_group])
+                    selected_group_heroes = [h for h in hero_data.keys() if h in allowed_heroes]
             
-            selected_hero_code = st.selectbox("选择角色", sorted_heroes, format_func=lambda x: display_map[x])
-            
-            if selected_hero_code:
-                st.subheader(f"⚔️ {display_map[selected_hero_code]}")
-                dims = hero_data[selected_hero_code]
+            if not selected_group_heroes:
+                st.warning("该系列暂无相关反馈数据的英雄。")
+            else:
+                # Sort by Display Name
+                sorted_heroes = sorted(selected_group_heroes, key=lambda x: display_map.get(x, x))
                 
-                tabs = st.tabs(["🗡️ 技能", "🎨 形象", "💪 强度"])
+                selected_hero_code = st.selectbox("选择角色", sorted_heroes, format_func=lambda x: display_map.get(x, x))
                 
-                def render_feedback(dimension_key, tab_container):
-                    with tab_container:
-                        items = dims.get(dimension_key, [])
-                        if not items:
-                            st.caption("暂无相关反馈")
-                            return
-                        
-                        pos = [i for i in items if i['label'] == 'Positive']
-                        neg = [i for i in items if i['label'] == 'Negative']
-                        
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            st.write(f"🙂 好评 ({len(pos)})")
-                            for p in pos:
-                                st.markdown(f"<div class='feedback-box feedback-pos'>{p['text']}</div>", unsafe_allow_html=True)
-                        with c2:
-                            st.write(f"😡 差评/建议 ({len(neg)})")
-                            for n in neg:
-                                st.markdown(f"<div class='feedback-box feedback-neg'>{n['text']}</div>", unsafe_allow_html=True)
-                
-                render_feedback("Skill", tabs[0])
-                render_feedback("Visual", tabs[1])
-                render_feedback("Strength", tabs[2])
+                if selected_hero_code:
+                    st.subheader(f"⚔️ {display_map.get(selected_hero_code, selected_hero_code)}")
+                    dims = hero_data[selected_hero_code]
+                    
+                    tabs = st.tabs(["🗡️ 技能", "🎨 形象", "💪 强度"])
+                    
+                    def render_feedback(dimension_key, tab_container):
+                        with tab_container:
+                            items = dims.get(dimension_key, [])
+                            if not items:
+                                st.caption("暂无相关反馈")
+                                return
+                            
+                            pos = [i for i in items if i['label'] == 'Positive']
+                            neg = [i for i in items if i['label'] == 'Negative']
+                            
+                            c1, c2 = st.columns(2)
+                            with c1:
+                                st.write(f"🙂 好评 ({len(pos)})")
+                                for p in pos:
+                                    st.markdown(f"<div class='feedback-box feedback-pos'>{p['text']}</div>", unsafe_allow_html=True)
+                            with c2:
+                                st.write(f"😡 差评/建议 ({len(neg)})")
+                                for n in neg:
+                                    st.markdown(f"<div class='feedback-box feedback-neg'>{n['text']}</div>", unsafe_allow_html=True)
+                    
+                    render_feedback("Skill", tabs[0])
+                    render_feedback("Visual", tabs[1])
+                    render_feedback("Strength", tabs[2])
 
 elif menu == "⚙️ 玩法反馈":
     st.title("⚙️ 玩法与系统反馈")

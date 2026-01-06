@@ -4,12 +4,12 @@ import json
 GAMES = {
     "jump_assemble": {
         "name": "漫画群星：大集结",
+        "crawl_days": 730, # Default 2 years
         "urls": [
-            "https://www.taptap.cn/app/358933/review?os=android",
-            "https://www.taptap.cn/app/358933/review?os=ios",
-            "https://www.taptap.io/jp/app/33659119",
-            "https://www.youtube.com/@jumpassembletc",
-            "https://m-apps.qoo-app.com/en-US/app/31187"
+            "https://www.taptap.cn/app/358933/review?os=android&sort=new",
+            "https://www.taptap.io/tw/app/33659119/review?sort=recent",
+            "https://www.youtube.com/@jumpassembletc/videos",
+            "https://m-apps.qoo-app.com/app-comment/31187?lang=current&sort=newest"
         ],
         "keywords": {
             "孙悟空": "Goku", "悟空": "Goku", "贝吉塔": "Vegeta", "路飞": "Luffy", "索隆": "Zoro",
