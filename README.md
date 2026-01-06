@@ -17,7 +17,7 @@ A comprehensive sentiment analysis and monitoring system focusing on game review
 - **Smart Data Processing**:
   - **Data Normalization**: Standardizes dates (relative "1 year ago" -> "YYYY-MM-DD").
   - **Incremental Updates**: Efficiently fetches only new reviews based on time windows.
-  - **Metadata Tracking**: Steps original source text and related video info (for YouTube).
+  - **Metadata Tracking**: Steps original source text and related content info (e.g. Video Titles, Forum Thread Titles).
 - **Advanced Analysis**:
   - **Sentiment Analysis**: Classifies feedback (Positive/Negative/Neutral) using NLP.
   - **Aspect Mining**: Extracts keywords related to Heroes (e.g., Goku, Luffy) and System (e.g., Lag, Matchmaking).

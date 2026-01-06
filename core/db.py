@@ -21,7 +21,10 @@ def init_db():
             character_mentions TEXT,
             detailed_analysis TEXT,
             crawled_at TEXT,
-            source TEXT
+            source TEXT,
+            content_title TEXT,
+            content_url TEXT,
+            original_date TEXT
         )
     ''')
     conn.commit()
@@ -37,24 +40,13 @@ def migrate_db():
     except: pass
     try: c.execute("ALTER TABLE reviews ADD COLUMN source TEXT")
     except: pass
-    try: c.execute("ALTER TABLE reviews ADD COLUMN video_title TEXT")
-    except: pass
-    try: c.execute("ALTER TABLE reviews ADD COLUMN video_url TEXT")
-    except: pass
     try: c.execute("ALTER TABLE reviews ADD COLUMN original_date TEXT")
     except: pass
     
-    # New Standardized Columns (Step Id 857)
-    try: 
-        c.execute("ALTER TABLE reviews ADD COLUMN content_title TEXT")
-        # Backfill from video_title if empty
-        c.execute("UPDATE reviews SET content_title = video_title WHERE content_title IS NULL AND video_title IS NOT NULL")
+    # Standardized Columns
+    try: c.execute("ALTER TABLE reviews ADD COLUMN content_title TEXT")
     except: pass
-    
-    try: 
-        c.execute("ALTER TABLE reviews ADD COLUMN content_url TEXT")
-        # Backfill from video_url if empty
-        c.execute("UPDATE reviews SET content_url = video_url WHERE content_url IS NULL AND video_url IS NOT NULL")
+    try: c.execute("ALTER TABLE reviews ADD COLUMN content_url TEXT")
     except: pass
         
     conn.commit()
@@ -63,24 +55,19 @@ def migrate_db():
 def save_review(review_data):
     """
     review_data: dict with id, game_id, author, rating, content, date, source, 
-                 content_title (was video_title), content_url (was video_url), original_date
+                 content_title, content_url, original_date
     """
     migrate_db() # Ensure connection/schema
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # Normalize keys: support both old 'video_' and new 'content_' keys
-    c_title = review_data.get('content_title') or review_data.get('video_title') or ''
-    c_url = review_data.get('content_url') or review_data.get('video_url') or ''
-    
     try:
         c.execute('''
             INSERT OR IGNORE INTO reviews (
                 id, game_id, author, rating, content, review_date, crawled_at, source, 
-                content_title, content_url, original_date,
-                video_title, video_url 
+                content_title, content_url, original_date
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             review_data['id'],
             review_data.get('game_id', 'jump_assemble'),
@@ -90,11 +77,9 @@ def save_review(review_data):
             review_data.get('date', datetime.datetime.now().strftime('%Y-%m-%d')),
             datetime.datetime.now().isoformat(),
             review_data.get('source', 'unknown'),
-            c_title,
-            c_url,
-            review_data.get('original_date', ''),
-            c_title, # Keep filling old columns for safety
-            c_url
+            review_data.get('content_title', ''),
+            review_data.get('content_url', ''),
+            review_data.get('original_date', '')
         ))
         conn.commit()
     except Exception as e:

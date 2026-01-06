@@ -163,7 +163,7 @@ def scrape_youtube(page, url, cutoff_date, game_key):
                     
                     if content:
                         save_review_helper(game_key, author, content, 0, date_str, source, 
-                                           video_title=vid_title, video_url=full_url, original_date=time_text)
+                                           content_title=vid_title, content_url=full_url, original_date=time_text)
                 except:
                     pass
             p_vid.close()

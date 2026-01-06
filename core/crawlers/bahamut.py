@@ -166,8 +166,8 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
                             rating=0,
                             date_str=date_str,
                             source=source,
-                            video_title=t_title, 
-                            video_url=t_url,
+                            content_title=t_title, 
+                            content_url=t_url,
                             original_date=date_text
                         )
                         print(f"      [DB] Saved post ({content[:10]}...) by {author}")

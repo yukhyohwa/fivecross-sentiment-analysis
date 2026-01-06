@@ -43,7 +43,7 @@ def parse_date(text):
 
     return None, "Unknown"
 
-def save_review_helper(game_key, author, content, rating, date_str, source, video_title=None, video_url=None, original_date=None):
+def save_review_helper(game_key, author, content, rating, date_str, source, content_title=None, content_url=None, original_date=None):
     review_id = hashlib.md5(f"{author}{date_str}{content}".encode()).hexdigest()
     
     # Validation: If date_str is not YYYY-MM-DD, try to use current date?
@@ -61,8 +61,6 @@ def save_review_helper(game_key, author, content, rating, date_str, source, vide
         'date': final_date,
         'original_date': original_date if original_date else date_str, 
         'source': source,
-        'content_title': video_title, # Map param to new db column key
-        'content_url': video_url,     # Map param to new db column key
-        'video_title': video_title,   # Keep legacy
-        'video_url': video_url        # Keep legacy
+        'content_title': content_title,
+        'content_url': content_url
     })

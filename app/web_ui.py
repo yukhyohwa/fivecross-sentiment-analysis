@@ -429,9 +429,12 @@ elif menu == "🔎 评论探索":
             date_display = str(row.get('review_date', '')).split(' ')[0]
             st.markdown(f"{source_badge} **{row.get('author','Unknown')}** | {date_display}")
             
-            # YouTube Video Info
-            if row.get('video_title'):
-                st.markdown(f"📺 *Video*: [{row.get('video_title')}]({row.get('video_url')})")
+            # Content Info
+            c_title = row.get('content_title', '')
+            c_url = row.get('content_url', '')
+            
+            if c_title:
+                st.markdown(f"📺 *Source*: [{c_title}]({c_url})")
                 
             st.write(row.get('content'))
             st.markdown("---")
