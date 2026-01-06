@@ -29,6 +29,10 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
     
     # Apply Source Filter
     if source_filter:
+        # Alias handling for usability
+        if source_filter.lower() == "bahamut":
+            source_filter = "gamer.com.tw"
+            
         print(f"Filter: Only scraping sources containing '{source_filter}'")
         target_urls = [u for u in target_urls if source_filter in u]
         
@@ -37,9 +41,14 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
     init_db()
     
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        # Launch with flags to reduce bot detection
+        browser = p.chromium.launch(
+            headless=False,
+            args=['--disable-blink-features=AutomationControlled'] 
+        )
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            viewport={'width': 1280, 'height': 800}
         )
         
         for url in target_urls:

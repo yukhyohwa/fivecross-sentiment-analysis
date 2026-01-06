@@ -15,7 +15,19 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
     
     try:
         page.goto(url)
-        page.wait_for_selector(".b-list__main", timeout=10000)
+        
+        # Cloudflare Bypass Wait
+        # Wait up to 30 seconds for the user to solve captcha if needed
+        print(f"  [{source}] Waiting for page load... (Please solve Cloudflare captcha if it appears)")
+        try:
+           page.wait_for_selector(".b-list__main", timeout=30000)
+        except Exception:
+           print(f"  [{source}] Timeout waiting for list directly. Checking if blocked...")
+           # Maybe pause longer?
+           time.sleep(5)
+           if page.title() == "Just a moment...":
+               print(f"  [{source}] Cloudflare detected! Please verify manually in the browser!")
+               page.wait_for_selector(".b-list__main", timeout=60000) # Give 60s more for manual solve
         
         # Iterate through rows
         # Class usually: .b-list__row
