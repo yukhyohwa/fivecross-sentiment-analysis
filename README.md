@@ -21,7 +21,11 @@ A comprehensive sentiment analysis and monitoring system focusing on game review
 - **Advanced Analysis**:
   - **Sentiment Analysis**: Classifies feedback (Positive/Negative/Neutral) using NLP.
   - **Aspect Mining**: Extracts keywords related to Heroes (e.g., Goku, Luffy) and System (e.g., Lag, Matchmaking).
+  - **Rich Hero Database**: Supports massive multilingual aliases (CN/TW/EN) grouped by Anime source (Dragon Ball, One Piece, Naruto, etc.).
   - **Visualization**: Interactive charts for trends, word clouds, and rating distributions.
+- **Secure Dashboard**:
+  - **Authentication**: Built-in login protection for the Web UI.
+  - **Source Filtering**: Filter feedback by platform (YouTube, TapTap, etc.).
 
 ## 🚀 Installation
 
@@ -52,7 +56,8 @@ python main.py
 ```
 
 ### 2. Analysis Dashboard (Web UI)
-Launch the visual dashboard to explore data:
+Launch the visual dashboard to explore data. 
+*Note: Requires login credentials configured in `.streamlit/secrets.toml` or environment variables.*
 ```bash
 python main.py web
 # or
@@ -71,9 +76,9 @@ Run the crawler to fetch new data.
   ```
 
 ### 4. Analysis Process
-Re-run NLP analysis on existing database records:
+Re-run NLP analysis on existing database records. Use `--force` to re-analyze everything (e.g., after updating keywords).
 ```bash
-python main.py analyze
+python main.py analyze --force
 ```
 
 ## 📂 Project Structure
@@ -84,7 +89,7 @@ fivecross-sentiment-analysis/
 │   └── web_ui.py          # Streamlit Dashboard application
 ├── config/
 │   ├── settings.py        # Crawler & Game configurations
-│   └── heroes.json        # Dynamic hero mapping configuration
+│   └── heroes.json        # Dynamic hero mapping configuration (Hierarchical)
 ├── core/
 │   ├── crawlers/          # Platform-specific crawler modules
 │   │   ├── base.py        # Shared utilities (saving, date parsing)
@@ -104,7 +109,7 @@ fivecross-sentiment-analysis/
 ## ⚙️ Configuration
 
 - **Game/URL Settings**: Modify `config/settings.py` to add new games or change target URLs.
-- **Hero Mappings**: Update `config/heroes.json` to track new characters or keywords.
+- **Hero Mappings**: Update `config/heroes.json` to track new characters, groups, or aliases. The structure supports `Groups -> Anime -> Hero -> [Aliases]`.
 
 ## 📝 License
 
