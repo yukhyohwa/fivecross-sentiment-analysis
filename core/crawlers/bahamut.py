@@ -8,39 +8,59 @@ def login_bahamut(page: Page):
     print("  [bahamut] Navigating to login page...")
     try:
         page.goto("https://user.gamer.com.tw/login.php")
+        print("  [bahamut] Waiting for login form... (Please solve Cloudflare CAPTCHA manually if needed!)")
         
-        print("  [bahamut] Waiting for login form... (If Cloudflare appears, please solve it manually!)")
+        # Smart Polling Loop
+        # We check for the input field every 2 seconds.
+        # This is more responsive than a single long wait if the user solves a captcha.
+        login_field_found = False
         
-        # Wait for the username input to appear. This implies Cloudflare is passed.
-        try:
-            page.wait_for_selector("#userid", state="visible", timeout=60000)
-            print("  [bahamut] Login form detected!")
-        except:
-             print("  [bahamut] Timeout waiting for login inputs. Cloudflare might still be blocking.")
+        for i in range(45): # Wait up to ~90 seconds
+            try:
+                # Check for either ID input or Name input
+                if page.locator("input[name='userid']").is_visible():
+                    login_field_found = True
+                    break
+                
+                # Also check if we are already redirected (logged in)?
+                if "login.php" not in page.url:
+                    print("  [bahamut] It seems we are already logged in (URL changed)!")
+                    return
+                
+                time.sleep(2)
+            except:
+                time.sleep(2)
+                
+        if not login_field_found:
+             print("  [bahamut] Warning: Could not find login input after 90s. Skipping login (trying as Guest)...")
              return
-        
+
         # Fill credentials
-        print("  [bahamut] Auto-filling credentials...")
-        page.fill("#userid", "bahauser1y9")
-        page.fill("#password", "mt1y9999")
-            
-        # Click login to trigger potential captcha
-        if page.locator("#btn-login").count() > 0:
-            page.click("#btn-login")
-            
-        print("  [bahamut] Credentials filled. Please SOLVE CAPTCHA/SLIDER manually now!")
-        print("  [bahamut] Script will wait up to 2 minutes for you to finish login...")
-        
-        # Wait for login success (redirect to user home or similar)
+        print("  [bahamut] Login inputs found! Auto-filling credentials now...")
         try:
-            # Wait until we see the top bar user name or redirected off login page
-            page.wait_for_url(lambda u: "login.php" not in u, timeout=120000) 
-            print("  [bahamut] Login appeared successful (URL changed).")
-        except:
-            print("  [bahamut] Warning: Login flow timed out. Continuing to forum anyway...")
+            page.fill("input[name='userid']", "bahauser1y9")
+            page.fill("input[name='password']", "mt1y9999")
+                
+            # Click login
+            if page.locator("#btn-login").count() > 0:
+                print("  [bahamut] Clicking Login button...")
+                page.click("#btn-login")
+                
+            print("  [bahamut] Credentials submitted. Please handle any secondary verification (Slider/Puzzle)!")
+            print("  [bahamut] Waiting for redirection to finish login...")
+            
+            # Wait for login success
+            try:
+                page.wait_for_url(lambda u: "login.php" not in u, timeout=120000) 
+                print("  [bahamut] Login successful!")
+            except:
+                print("  [bahamut] Login flow finished (timeout waiting for redirect). Proceeding...")
+                
+        except Exception as e:
+            print(f"  [bahamut] Error during credential filling: {e}")
 
     except Exception as e:
-        print(f"  [bahamut] Login failed: {e}")
+        print(f"  [bahamut] Login navigation failed: {e}")
 
 def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_key: str):
     source = "bahamut"
