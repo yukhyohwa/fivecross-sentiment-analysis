@@ -126,7 +126,7 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
             
             posts = page.locator("section.c-section").all()
             
-            for post in posts:
+            for i, post in enumerate(posts):
                 try:
                     # Author
                     # .c-user__name
@@ -138,7 +138,15 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
                     # .c-article__content
                     content_el = post.locator(".c-article__content")
                     if not content_el.count(): continue
-                    content = content_el.inner_text().strip()
+                    raw_content = content_el.inner_text().strip()
+                    
+                    # Add Prefix for Main Thread vs Reply
+                    if i == 0:
+                        content_prefix = "【发帖】"
+                    else:
+                        content_prefix = "【跟帖】"
+                    
+                    content = f"{content_prefix} {raw_content}"
                     
                     # Date
                     # .edittime (editing time) or .c-post__header__info (floor info)?
