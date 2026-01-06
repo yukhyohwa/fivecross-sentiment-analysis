@@ -238,4 +238,4 @@ def parse_date(text):
     return None, "Unknown"
 
 if __name__ == "__main__":
-    run_crawler(100)
+    run_crawler("jump_assemble", 24)
