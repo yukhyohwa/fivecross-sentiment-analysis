@@ -7,7 +7,7 @@ import datetime
 # Import crawler modules
 from core.crawlers import scrape_taptap_cn, scrape_taptap_intl, scrape_youtube, scrape_qooapp, scrape_bahamut
 
-def run_crawler(game_key="jump_assemble", days_back=None):
+def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
     if game_key not in GAMES:
         print(f"Game {game_key} not found.")
         return
@@ -26,6 +26,12 @@ def run_crawler(game_key="jump_assemble", days_back=None):
     cutoff_date = today - datetime.timedelta(days=days_back)
     print(f"Target: {game_config['name']}")
     print(f"Time Range: Last {days_back} days (Since {cutoff_date.strftime('%Y-%m-%d')})")
+    
+    # Apply Source Filter
+    if source_filter:
+        print(f"Filter: Only scraping sources containing '{source_filter}'")
+        target_urls = [u for u in target_urls if source_filter in u]
+        
     print(f"URLs: {target_urls}")
     
     init_db()

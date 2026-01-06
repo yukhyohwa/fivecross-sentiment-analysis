@@ -48,6 +48,7 @@ if __name__ == "__main__":
     parser.add_argument("mode", nargs="?", help="Mode: web, crawl, analyze")
     parser.add_argument("--game", default="jump_assemble", help="Game ID for crawl/analyze")
     parser.add_argument("--days", default=None, type=int, help="Days history for crawler (overrides settings)")
+    parser.add_argument("--source", default=None, help="Filter crawler by source URL (e.g., 'bahamut', 'youtube')")
     parser.add_argument("--force", action="store_true", help="Force re-analysis of all data")
 
     args = parser.parse_args()
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     if args.mode == "web":
         run_web_ui()
     elif args.mode == "crawl":
-        run_crawler(args.game, args.days)
+        run_crawler(args.game, days_back=args.days, source_filter=args.source)
     elif args.mode == "analyze":
         process_reviews(args.game, force=args.force)
     else:
