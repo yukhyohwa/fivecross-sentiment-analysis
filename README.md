@@ -57,7 +57,7 @@ python main.py
 
 ### 2. Analysis Dashboard (Web UI)
 Launch the visual dashboard to explore data. 
-*Note: Requires login credentials configured in `.streamlit/secrets.toml` or environment variables.*
+*Note: Requires login credentials configured in `.streamlit/secrets.toml`.*
 ```bash
 python main.py web
 # or
