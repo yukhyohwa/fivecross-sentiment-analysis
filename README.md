@@ -66,14 +66,23 @@ streamlit run app/web_ui.py
 
 ### 3. Crawler (CLI)
 Run the crawler to fetch new data.
-- **Default (Default 2 years)**:
-  ```bash
-  python main.py crawl
-  ```
-- **Incremental (Last 30 days)**:
-  ```bash
-  python main.py crawl --days 30
-  ```
+
+**Standard Run (All Sources):**
+```bash
+python main.py crawl --days 30
+```
+
+**Bahamut Forum (Special Instructions):**
+Bahamut has strict anti-bot protection (Cloudflare). The crawler uses a **Manual Login Mode**:
+1. Run `python main.py crawl --days 30 --source bahamut`
+2. A browser window will open at the login page.
+3. **Manually** solve the Cloudflare Captcha and Log In.
+4. Once you are redirected to the homepage, the script will automatically detect success and start scraping.
+5. **Data Backup**: Raw scraped data is also saved to `data/bahamut_raw_backup.jsonl` in case of DB errors.
+
+**Arguments:**
+- `--days N`: Crawl past N days (default: config setting).
+- `--source KEY`: Filter by source URL keyword (e.g., `bahamut`, `youtube`).
 
 ### 4. Analysis Process
 Re-run NLP analysis on existing database records. Use `--force` to re-analyze everything (e.g., after updating keywords).
