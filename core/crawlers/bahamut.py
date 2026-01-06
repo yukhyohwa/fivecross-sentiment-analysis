@@ -1,6 +1,7 @@
 from playwright.sync_api import Page
 import datetime
 import time
+import random
 from .base import save_review_helper, parse_date
 
 def login_bahamut(page: Page):
@@ -110,11 +111,17 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
     print(f"  [{source}] identified {len(threads_to_scrape)} threads to scan.")
 
     # 2. Visit each thread
-    for thread in threads_to_scrape:
+    for i, thread in enumerate(threads_to_scrape):
         t_url = thread['url']
         t_title = thread['title']
         
-        print(f"  [{source}] Processing Thread: {t_title}")
+        # Rate Limiting
+        # Sleep 3~8 seconds between scans to be gentle and resemble human reading
+        delay = random.uniform(3, 8)
+        print(f"  [{source}] Processing Thread ({i+1}/{len(threads_to_scrape)}): {t_title}")
+        print(f"      ... sleeping {delay:.1f}s to avoid detection ...")
+        time.sleep(delay)
+
         try:
             # Create a new page context ensures clean state, but reusing page is faster usually. 
             # Let's reuse 'page' but handle navigation carefully.
