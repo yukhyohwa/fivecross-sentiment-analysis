@@ -40,26 +40,29 @@ st.set_page_config(
 
 # Authentication
 def check_password():
-    """Returns `True` if the user had the correct password."""
+    """Returns `True` if the user is authorized."""
     
-    # If no secrets defined, skip auth (Local Dev without secrets or public mode)
+    # 1. Check for public/local mode (no secrets)
     if "DB_USERNAME" not in st.secrets:
         return True
 
-    # Check if already authenticated
+    # 2. Check if already authenticated via Session State
     if st.session_state.get("password_correct", False):
         return True
-
-    # Show Login Form
-    with st.form("login_form"):
-        st.text_input("Username", key="login_username")
-        st.text_input("Password", type="password", key="login_password")
+    
+    # 3. Show Login Form
+    st.header("Login")
+    with st.form("auth_form"):
+        # Use new keys to avoid conflicts with old session state
+        input_user = st.text_input("Username", key="auth_username")
+        input_pass = st.text_input("Password", type="password", key="auth_password")
         submitted = st.form_submit_button("Log in")
 
     if submitted:
+        # Check credentials
         if (
-            st.session_state.get("login_username") == st.secrets["DB_USERNAME"]
-            and st.session_state.get("login_password") == st.secrets["DB_TOKEN"]
+            input_user == st.secrets["DB_USERNAME"]
+            and input_pass == st.secrets["DB_TOKEN"]
         ):
             st.session_state["password_correct"] = True
             st.rerun()
