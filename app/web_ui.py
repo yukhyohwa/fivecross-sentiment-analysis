@@ -15,7 +15,7 @@ import io
 
 from core.db import get_all_data, init_db
 from core.analysis import analyze_sentiment, extract_keywords, detailed_aspect_analysis, update_analysis_results
-import core.crawler as crawler
+
 from config.settings import GAMES
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
@@ -114,31 +114,7 @@ def load_data(game_filter=None):
             
     return df
 
-def run_spider_ui(game_key, max_count):
-    output_buffer = io.StringIO()
-    original_stdout = sys.stdout
-    sys.stdout = output_buffer
-    try:
-        with st.spinner(f"正在爬取 {GAMES[game_key]['name']}..."):
-            crawler.run_crawler(game_key, max_count)
-            
-            # Re-process
-            from db import get_reviews_for_analysis
-            rows = get_reviews_for_analysis(game_key)
-            for r in rows:
-                rid, content, gid = r
-                if not content: continue
-                gid = gid if gid else game_key
-                score, label = analyze_sentiment(content)
-                mentions = extract_keywords(content, gid)
-                details = detailed_aspect_analysis(content, gid)
-                update_analysis_results(rid, score, label, mentions, details)
-            st.success("完成！")
-    except Exception as e:
-        st.error(f"Error: {e}")
-    finally:
-        sys.stdout = original_stdout
-    return output_buffer.getvalue()
+
 
 # Sidebar
 with st.sidebar:
@@ -154,7 +130,7 @@ with st.sidebar:
     st.markdown("---")
     
     # Navigation (Top Priority)
-    menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "🕷️ 爬虫控制", "🔧 配置管理"])
+    menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "🔧 配置管理"])
     st.markdown("---")
     
     # Load Data for Sidebar Filters
@@ -352,7 +328,7 @@ elif menu == "🦸 英雄专项":
                     st.subheader(f"⚔️ {display_map.get(selected_hero_code, selected_hero_code)}")
                     dims = hero_data[selected_hero_code]
                     
-                    tabs = st.tabs(["🗡️ 技能", "🎨 形象", "💪 强度"])
+                    tabs = st.tabs(["💭 综合", "🗡️ 技能", "🎨 形象", "💪 强度"])
                     
                     def render_feedback(dimension_key, tab_container):
                         with tab_container:
@@ -374,9 +350,10 @@ elif menu == "🦸 英雄专项":
                                 for n in neg:
                                     st.markdown(f"<div class='feedback-box feedback-neg'>{n['text']}</div>", unsafe_allow_html=True)
                     
-                    render_feedback("Skill", tabs[0])
-                    render_feedback("Visual", tabs[1])
-                    render_feedback("Strength", tabs[2])
+                    render_feedback("General", tabs[0])
+                    render_feedback("Skill", tabs[1])
+                    render_feedback("Visual", tabs[2])
+                    render_feedback("Strength", tabs[3])
 
 elif menu == "⚙️ 玩法反馈":
     st.title("⚙️ 玩法与系统反馈")
@@ -434,21 +411,6 @@ elif menu == "🔎 评论探索":
                 
             st.write(row.get('content'))
             st.markdown("---")
-
-elif menu == "🕷️ 爬虫控制":
-    st.title("🕷️ 爬虫控制台")
-    st.info(f"即将抓取项目: **{selected_game_name}**")
-    
-    months = st.slider("抓取时间范围 (过去 N 个月)", 1, 60, 24)
-    
-    if st.button("开始抓取", type="primary"):
-        with st.status("正在运行爬虫...", expanded=True) as status:
-            log = run_spider_ui(selected_game_key, months)
-            st.text_area("日志", log)
-            status.update(label="抓取完成", state="complete")
-        
-        time.sleep(1)
-        st.rerun()
 
 elif menu == "🔧 配置管理":
     st.title("🔧 英雄配置管理")

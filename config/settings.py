@@ -43,5 +43,8 @@ if os.path.exists(HEROES_CONFIG_PATH):
                         for alias in aliases:
                              GAMES[g_key]["keywords"][alias] = hero_code
                              
+        print(f"[DEBUG] Loaded {len(GAMES['jump_assemble']['keywords'])} keywords for jump_assemble.")
+        # print(f"[DEBUG] Keywords: {list(GAMES['jump_assemble']['keywords'].keys())[:10]}...")
+                             
     except Exception as e:
         print(f"Error loading dynamic heroes: {e}")

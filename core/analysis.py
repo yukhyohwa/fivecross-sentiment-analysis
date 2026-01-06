@@ -88,6 +88,7 @@ def detailed_aspect_analysis(text, game_id="jump_assemble"):
         
         # A. Hero Analysis
         if current_hero_context:
+            matched_dim = False
             for dim, keywords in HERO_DIMENSIONS.items():
                 if any(k in clause for k in keywords):
                     if current_hero_context not in analysis["Heroes"]:
@@ -99,6 +100,20 @@ def detailed_aspect_analysis(text, game_id="jump_assemble"):
                         "label": label,
                         "score": score
                     })
+                    matched_dim = True
+            
+            # If hero was explicitly mentioned in this clause but no specific dimension matched,
+            # capture it under "General" to ensure we don't lose the feedback.
+            if found_hero and not matched_dim:
+                if current_hero_context not in analysis["Heroes"]:
+                    analysis["Heroes"][current_hero_context] = {}
+                if "General" not in analysis["Heroes"][current_hero_context]:
+                    analysis["Heroes"][current_hero_context]["General"] = []
+                analysis["Heroes"][current_hero_context]["General"].append({
+                    "text": clause,
+                    "label": label,
+                    "score": score
+                })
 
         # B. System Analysis
         for aspect, keywords in GAME_ASPECTS.items():
