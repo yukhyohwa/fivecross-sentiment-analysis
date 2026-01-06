@@ -22,17 +22,16 @@ def login_bahamut(page: Page):
                     login_field_found = True
                     break
                 
-                # Also check if we are already redirected (logged in)?
-                if "login.php" not in page.url:
-                    print("  [bahamut] It seems we are already logged in (URL changed)!")
-                    return
+                # Check for Cloudflare
+                if "Just a moment" in page.title():
+                    print("  [bahamut] ... Still waiting for Cloudflare challenge (Please solve it!) ...")
                 
                 time.sleep(2)
             except:
                 time.sleep(2)
                 
         if not login_field_found:
-             print("  [bahamut] Warning: Could not find login input after 90s. Skipping login (trying as Guest)...")
+             print("  [bahamut] Warning: Could not find login input after 90s. Maybe stuck on Captcha? Skipping...")
              return
 
         # Fill credentials
