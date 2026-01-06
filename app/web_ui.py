@@ -3,19 +3,20 @@ import os
 import sys
 
 # Add project root to path for Streamlit Cloud
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Use insert(0) to ensure this path takes precedence
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import json
 import time
 import io
-import sys
+
 from core.db import get_all_data, init_db
 from core.analysis import analyze_sentiment, extract_keywords, detailed_aspect_analysis, update_analysis_results
 import core.crawler as crawler
 from config.settings import GAMES
-import os
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import jieba
