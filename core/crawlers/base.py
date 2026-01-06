@@ -59,8 +59,10 @@ def save_review_helper(game_key, author, content, rating, date_str, source, vide
         'rating': rating,
         'content': content,
         'date': final_date,
-        'original_date': original_date if original_date else date_str, # Fallback to passed date_str if raw not explicitly sent
+        'original_date': original_date if original_date else date_str, 
         'source': source,
-        'video_title': video_title,
-        'video_url': video_url
+        'content_title': video_title, # Map param to new db column key
+        'content_url': video_url,     # Map param to new db column key
+        'video_title': video_title,   # Keep legacy
+        'video_url': video_url        # Keep legacy
     })

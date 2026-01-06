@@ -8,3 +8,5 @@ output/
 
 # Streamlit
 .streamlit/
+.streamlit/secrets.toml
+data/*.jsonl
