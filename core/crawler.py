@@ -5,7 +5,7 @@ from config.settings import GAMES
 import datetime
 
 # Import crawler modules
-from core.crawlers import scrape_taptap_cn, scrape_taptap_intl, scrape_youtube, scrape_qooapp
+from core.crawlers import scrape_taptap_cn, scrape_taptap_intl, scrape_youtube, scrape_qooapp, scrape_bahamut
 
 def run_crawler(game_key="jump_assemble", days_back=None):
     if game_key not in GAMES:
@@ -50,6 +50,8 @@ def run_crawler(game_key="jump_assemble", days_back=None):
                     scrape_youtube(page, url, cutoff_date, game_key)
                 elif "qoo-app" in url:
                     scrape_qooapp(page, url, cutoff_date, game_key)
+                elif "forum.gamer.com.tw" in url:
+                    scrape_bahamut(page, url, cutoff_date, game_key)
                 else:
                     print(f"Unknown source for URL: {url}")
                 

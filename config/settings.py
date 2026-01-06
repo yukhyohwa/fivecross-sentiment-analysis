@@ -9,7 +9,8 @@ GAMES = {
             "https://www.taptap.cn/app/358933/review?os=android&sort=new",
             "https://www.taptap.io/tw/app/33659119/review?sort=recent",
             "https://www.youtube.com/@jumpassembletc/videos",
-            "https://m-apps.qoo-app.com/app-comment/31187?lang=current&sort=newest"
+            "https://m-apps.qoo-app.com/app-comment/31187?lang=current&sort=newest",
+            "https://forum.gamer.com.tw/B.php?bsn=78752"    # Bahamut Forum
         ],
         "keywords": {
             "孙悟空": "Goku", "悟空": "Goku", "贝吉塔": "Vegeta", "路飞": "Luffy", "索隆": "Zoro",
