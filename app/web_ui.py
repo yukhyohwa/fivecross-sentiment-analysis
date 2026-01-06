@@ -60,10 +60,23 @@ def check_password():
 
     if submitted:
         # Check credentials
+        is_valid = False
+        
+        # 1. Check legacy (DB_USERNAME)
         if (
-            input_user == st.secrets["DB_USERNAME"]
+            "DB_USERNAME" in st.secrets 
+            and input_user == st.secrets["DB_USERNAME"]
             and input_pass == st.secrets["DB_TOKEN"]
         ):
+            is_valid = True
+            
+        # 2. Check multiple users ([passwords] section)
+        elif "passwords" in st.secrets:
+            # secrets["passwords"] returns a AttrDict/Dict
+            if input_user in st.secrets["passwords"] and input_pass == st.secrets["passwords"][input_user]:
+                is_valid = True
+                
+        if is_valid:
             st.session_state["password_correct"] = True
             st.rerun()
         else:
