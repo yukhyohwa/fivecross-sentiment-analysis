@@ -1,4 +1,9 @@
 import streamlit as st
+import os
+import sys
+
+# Add project root to path for Streamlit Cloud
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
