@@ -46,33 +46,27 @@ def check_password():
     if "DB_USERNAME" not in st.secrets:
         return True
 
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
+    # Check if already authenticated
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show Login Form
+    with st.form("login_form"):
+        st.text_input("Username", key="login_username")
+        st.text_input("Password", type="password", key="login_password")
+        submitted = st.form_submit_button("Log in")
+
+    if submitted:
         if (
-            st.session_state.get("username") == st.secrets["DB_USERNAME"]
-            and st.session_state.get("password") == st.secrets["DB_TOKEN"]
+            st.session_state.get("login_username") == st.secrets["DB_USERNAME"]
+            and st.session_state.get("login_password") == st.secrets["DB_TOKEN"]
         ):
             st.session_state["password_correct"] = True
-            del st.session_state["password"]  # don't store password
-            del st.session_state["username"]
+            st.rerun()
         else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state:
-        # First run, show input for username/password.
-        st.text_input("Username", key="username")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        return False
-        
-    elif not st.session_state["password_correct"]:
-        # Password not correct, show input + error.
-        st.text_input("Username", key="username")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        st.error("😕 User not known or password incorrect")
-        return False
-    else:
-        # Password correct.
-        return True
+            st.error("😕 User not known or password incorrect")
+            
+    return False
 
 if not check_password():
     st.info("Please log in to continue.")
