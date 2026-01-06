@@ -3,8 +3,56 @@ import datetime
 import time
 from .base import save_review_helper, parse_date
 
+def login_bahamut(page: Page):
+    print("  [bahamut] Attempting login...")
+    try:
+        page.goto("https://user.gamer.com.tw/login.php")
+        
+        # Wait for form
+        try:
+            page.wait_for_selector("#userid", timeout=10000)
+            print("  [bahamut] Login page loaded.")
+        except:
+             print("  [bahamut] Login page not detecting inputs. Cloudflare might be blocking.")
+             time.sleep(5)
+        
+        # Fill credentials
+        # Check if already logged in? (Usually redirects if logged in, but login.php might stay)
+        if page.locator("#userid").count() > 0:
+            print("  [bahamut] Filling credentials...")
+            page.fill("#userid", "bahauser1y9")
+            page.fill("#password", "mt1y9999")
+            
+            # Click login
+            # Usually strict captcha here. We will fill and let user click or try to click.
+            # Bahamut often uses a draggable slider or hCaptcha.
+            # We will CLICK the button, but if captcha pops up, user needs to solve it.
+            
+            # Check for 'btn-login'
+            if page.locator("#btn-login").count() > 0:
+                page.click("#btn-login")
+                
+            print("  [bahamut] Credentials filled. Please SOLVE CAPTCHA manually if it appears!")
+            
+            # Wait for login success (redirect to user home or similar)
+            # Or just wait for a known cookie "BAHAID"
+            # We'll give a generous timeout for manual interaction
+            try:
+                # Wait until we see the top bar user name or redirected off login page
+                page.wait_for_url(lambda u: "login.php" not in u, timeout=60000) 
+                print("  [bahamut] Login appeared successful (URL changed).")
+            except:
+                print("  [bahamut] Warning: Login flow timed out. Continuing anyway...")
+
+    except Exception as e:
+        print(f"  [bahamut] Login failed: {e}")
+
 def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_key: str):
     source = "bahamut"
+    
+    # Perform Login First
+    login_bahamut(page)
+    
     print(f"  [{source}] Scraping Bahamut Board: {url}")
     
     # 1. Get Thread Links from the list page
@@ -16,18 +64,18 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
     try:
         page.goto(url)
         
-        # Cloudflare Bypass Wait
-        # Wait up to 30 seconds for the user to solve captcha if needed
-        print(f"  [{source}] Waiting for page load... (Please solve Cloudflare captcha if it appears)")
+        # Cloudflare Bypass wait
         try:
-           page.wait_for_selector(".b-list__main", timeout=30000)
+           # Try to find the list container. 
+           # Note: selector might be .b-list__main (desktop)
+           page.wait_for_selector(".b-list__main", timeout=15000)
         except Exception:
-           print(f"  [{source}] Timeout waiting for list directly. Checking if blocked...")
-           # Maybe pause longer?
-           time.sleep(5)
+           print(f"  [{source}] List not found immediately. Please check browser window.")
+           # Give user time to fix
+           time.sleep(10)
            if page.title() == "Just a moment...":
-               print(f"  [{source}] Cloudflare detected! Please verify manually in the browser!")
-               page.wait_for_selector(".b-list__main", timeout=60000) # Give 60s more for manual solve
+               print("    Cloudflare detected. Waiting for manual solve...")
+               page.wait_for_selector(".b-list__main", timeout=60000) 
         
         # Iterate through rows
         # Class usually: .b-list__row
