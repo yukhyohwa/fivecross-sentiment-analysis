@@ -153,6 +153,13 @@ with st.sidebar:
     st.caption(f"当前项目: {selected_game_name}")
     st.markdown("---")
     
+    # Navigation (Top Priority)
+    menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "🕷️ 爬虫控制", "🔧 配置管理"])
+    st.markdown("---")
+    
+    # Load Data for Sidebar Filters
+    df = load_data(selected_game_key)
+    
     # Date Filter
     st.subheader("📅 时间筛选")
     today = pd.Timestamp.now().date()
@@ -167,11 +174,6 @@ with st.sidebar:
     
     if "taptap_intl" in selected_sources:
         st.info("⚠️ Note: TapTap Intl 暂时不能获取准确评论时间，时间可能为爬虫时间。")
-
-    menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "🕷️ 爬虫控制", "🔧 配置管理"])
-    st.markdown("---")
-
-df = load_data(selected_game_key)
 
 # Filter by Source
 if not df.empty and 'source' in df.columns and selected_sources:
@@ -446,7 +448,7 @@ elif menu == "🕷️ 爬虫控制":
             status.update(label="抓取完成", state="complete")
         
         time.sleep(1)
-        st.experimental_rerun()
+        st.rerun()
 
 elif menu == "🔧 配置管理":
     st.title("🔧 英雄配置管理")
