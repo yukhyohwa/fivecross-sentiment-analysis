@@ -41,8 +41,8 @@ def check_password():
     def password_entered():
         """Checks whether a password entered by the user is correct."""
         if (
-            st.session_state["username"] == st.secrets["DB_USERNAME"]
-            and st.session_state["password"] == st.secrets["DB_TOKEN"]
+            st.session_state.get("username") == st.secrets["DB_USERNAME"]
+            and st.session_state.get("password") == st.secrets["DB_TOKEN"]
         ):
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # don't store password
