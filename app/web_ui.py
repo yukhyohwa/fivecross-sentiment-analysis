@@ -21,7 +21,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import jieba
 import re
-import setuptools # Just to be safe with some imports if needed
+
 
 def load_stopwords():
     stop_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'stopwords.txt')
