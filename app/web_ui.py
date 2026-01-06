@@ -20,6 +20,7 @@ from config.settings import GAMES
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import jieba
+import re
 
 # Page Configuration
 st.set_page_config(
@@ -231,11 +232,36 @@ elif menu == "🦸 英雄专项":
         if not hero_data:
             st.warning("暂无特定英雄的反馈数据。")
         else:
-            selected_hero = st.selectbox("选择角色", sorted(hero_data.keys()))
+            # Create a display map: CodeName -> Display Name (Chinese)
+            display_map = {}
+            keywords = GAMES[selected_game_key].get('keywords', {})
             
-            if selected_hero:
-                st.subheader(f"⚔️ {selected_hero}")
-                dims = hero_data[selected_hero]
+            # Pre-fill with CodeName
+            for h_code in hero_data.keys():
+                display_map[h_code] = h_code 
+                
+            # Try to find a Chinese alias
+            for h_code in hero_data.keys():
+                # Find all keys in keywords that map to h_code
+                aliases = [k for k, v in keywords.items() if v == h_code]
+                # Pick the first one that looks like Chinese (or just the first one if strict)
+                # Usually heroes.json puts primary name first, but dict order varies.
+                # Let's try to match with config/heroes.json if we can, but simpler:
+                # Just pick the longest Chinese string, or one that doesn't contain a-z
+                chinese_aliases = [a for a in aliases if not re.search('[a-zA-Z]', a)]
+                if chinese_aliases:
+                   display_map[h_code] = chinese_aliases[0] # Pick first Chinese alias
+                elif aliases:
+                   display_map[h_code] = aliases[0]
+            
+            # Sort by Display Name
+            sorted_heroes = sorted(hero_data.keys(), key=lambda x: display_map[x])
+            
+            selected_hero_code = st.selectbox("选择角色", sorted_heroes, format_func=lambda x: display_map[x])
+            
+            if selected_hero_code:
+                st.subheader(f"⚔️ {display_map[selected_hero_code]}")
+                dims = hero_data[selected_hero_code]
                 
                 tabs = st.tabs(["🗡️ 技能", "🎨 形象", "💪 强度"])
                 

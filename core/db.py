@@ -20,7 +20,8 @@ def init_db():
             sentiment_label TEXT,
             character_mentions TEXT,
             detailed_analysis TEXT,
-            crawled_at TEXT
+            crawled_at TEXT,
+            source TEXT
         )
     ''')
     conn.commit()
@@ -35,20 +36,23 @@ def migrate_db():
     try:
         c.execute("ALTER TABLE reviews ADD COLUMN game_id TEXT")
     except: pass
+    try:
+        c.execute("ALTER TABLE reviews ADD COLUMN source TEXT")
+    except: pass
     conn.commit()
     conn.close()
 
 def save_review(review_data):
     """
-    review_data: dict with id, game_id, author, rating, content, date
+    review_data: dict with id, game_id, author, rating, content, date, source
     """
     migrate_db() # Ensure column exists
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     try:
         c.execute('''
-            INSERT OR IGNORE INTO reviews (id, game_id, author, rating, content, review_date, crawled_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO reviews (id, game_id, author, rating, content, review_date, crawled_at, source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             review_data['id'],
             review_data.get('game_id', 'jump_assemble'), # Default fallback
@@ -56,7 +60,8 @@ def save_review(review_data):
             review_data['rating'],
             review_data['content'],
             review_data['date'],
-            datetime.datetime.now().isoformat()
+            datetime.datetime.now().isoformat(),
+            review_data.get('source', 'taptap_android')
         ))
         conn.commit()
     except Exception as e:

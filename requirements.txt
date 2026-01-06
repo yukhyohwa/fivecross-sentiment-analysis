@@ -8,3 +8,4 @@ streamlit
 plotly
 wordcloud
 jieba
+google-generativeai

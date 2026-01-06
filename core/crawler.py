@@ -89,7 +89,18 @@ def run_crawler(game_key="jump_assemble", months_back=24):
                         
                     reviews_collected_on_page = current_count
                 
-                print(f"  Parsing reviews from {url}...")
+                # Identify Source
+                source = "taptap_android"
+                if "os=ios" in url:
+                    source = "taptap_ios"
+                elif "youtube.com" in url:
+                    source = "youtube"
+                elif "taptap.io" in url:
+                    source = "taptap_global"
+                elif "os=android" in url:
+                    source = "taptap_android"
+
+                print(f"  Parsing reviews from {url} ({source})...")
                 review_elements = page.locator(".review-item__content").all()
                 
                 for el in review_elements:
@@ -122,7 +133,8 @@ def run_crawler(game_key="jump_assemble", months_back=24):
                             'author': author,
                             'rating': rating,
                             'content': content,
-                            'date': date_str
+                            'date': date_str,
+                            'source': source
                         }
                         save_review(review_data)
                         total_saved += 1
