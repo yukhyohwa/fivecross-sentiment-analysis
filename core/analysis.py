@@ -113,10 +113,10 @@ def detailed_aspect_analysis(text, game_id="jump_assemble"):
                  
     return json.dumps(analysis)
 
-def process_reviews(game_id=None):
+def process_reviews(game_id=None, force=False):
     init_db() 
     print("Fetching reviews for analysis...")
-    rows = get_reviews_for_analysis(game_id)
+    rows = get_reviews_for_analysis(game_id, force)
     print(f"Found {len(rows)} reviews to process.")
     
     for r in rows:

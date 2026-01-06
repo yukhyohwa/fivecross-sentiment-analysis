@@ -30,9 +30,18 @@ if os.path.exists(HEROES_CONFIG_PATH):
             
         for g_key, g_data in dynamic_heroes.items():
             if g_key in GAMES:
-                heroes = g_data.get("Heroes", {})
-                for hero_name, aliases in heroes.items():
-                    for alias in aliases:
-                        GAMES[g_key]["keywords"][alias] = hero_name
+                # Load from "Groups" structure
+                if "Groups" in g_data:
+                    for group_name, heroes_dict in g_data["Groups"].items():
+                        for hero_code, aliases in heroes_dict.items():
+                            for alias in aliases:
+                                GAMES[g_key]["keywords"][alias] = hero_code
+                
+                # Fallback for old "Heroes" structure if exists
+                if "Heroes" in g_data:
+                     for hero_code, aliases in g_data["Heroes"].items():
+                        for alias in aliases:
+                             GAMES[g_key]["keywords"][alias] = hero_code
+                             
     except Exception as e:
         print(f"Error loading dynamic heroes: {e}")

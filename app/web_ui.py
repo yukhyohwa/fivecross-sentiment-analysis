@@ -30,6 +30,46 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Authentication
+def check_password():
+    """Returns `True` if the user had the correct password."""
+    
+    # If no secrets defined, skip auth (Local Dev without secrets or public mode)
+    if "DB_USERNAME" not in st.secrets:
+        return True
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if (
+            st.session_state["username"] == st.secrets["DB_USERNAME"]
+            and st.session_state["password"] == st.secrets["DB_TOKEN"]
+        ):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # don't store password
+            del st.session_state["username"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # First run, show input for username/password.
+        st.text_input("Username", key="username")
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        return False
+        
+    elif not st.session_state["password_correct"]:
+        # Password not correct, show input + error.
+        st.text_input("Username", key="username")
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        st.error("😕 User not known or password incorrect")
+        return False
+    else:
+        # Password correct.
+        return True
+
+if not check_password():
+    st.info("Please log in to continue.")
+    st.stop()
+
 # Custom CSS
 st.markdown("""
 <style>
@@ -120,10 +160,22 @@ with st.sidebar:
     start_date = st.date_input("开始日期", today - pd.Timedelta(days=730))
     end_date = st.date_input("结束日期", today)
     
+    # Source Filter
+    st.subheader("🌐 来源筛选")
+    all_sources = sorted(list(df['source'].dropna().unique())) if 'source' in df.columns else []
+    selected_sources = st.multiselect("选择来源", all_sources, default=all_sources)
+    
+    if "taptap_intl" in selected_sources:
+        st.info("⚠️ Note: TapTap Intl 暂时不能获取准确评论时间，时间可能为爬虫时间。")
+
     menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "🕷️ 爬虫控制", "🔧 配置管理"])
     st.markdown("---")
 
 df = load_data(selected_game_key)
+
+# Filter by Source
+if not df.empty and 'source' in df.columns and selected_sources:
+    df = df[df['source'].isin(selected_sources)]
 
 # Apply Date Filter
 if not df.empty and 'review_date' in df.columns:
@@ -240,7 +292,14 @@ elif menu == "🦸 英雄专项":
                     with open(config_path, 'r', encoding='utf-8') as f:
                         fc = json.load(f)
                         if selected_game_key in fc and "Groups" in fc[selected_game_key]:
-                             hero_groups = fc[selected_game_key]["Groups"]
+                             raw_groups = fc[selected_game_key]["Groups"]
+                             # Convert new Dict structure to List for UI filtering
+                             # {GroupName: {Hero: [Aliases]}} -> {GroupName: [Hero]}
+                             for g_name, g_heroes in raw_groups.items():
+                                 if isinstance(g_heroes, dict):
+                                     hero_groups[g_name] = list(g_heroes.keys())
+                                 elif isinstance(g_heroes, list):
+                                     hero_groups[g_name] = g_heroes
                 except: pass
 
             # Create a display map: CodeName -> Display Name (Chinese)
@@ -252,18 +311,26 @@ elif menu == "🦸 英雄专项":
                 display_map[h_code] = h_code 
                 
             # Try to find a Chinese alias
+            # Optimize: Reverse lookup from new config structure if possible, but keywords map is flat.
+            # We can scan the flat map.
             for h_code in hero_data.keys():
+                # Find all aliases for this code
                 aliases = [k for k, v in keywords.items() if v == h_code]
+                # Prioritize: 1. Chinese (no alpha) 2. First available
                 chinese_aliases = [a for a in aliases if not re.search('[a-zA-Z]', a)]
                 if chinese_aliases:
-                   display_map[h_code] = chinese_aliases[0]
+                   # Pick shortest Chinese alias usually implies the name? Or longest? 
+                   # "孙悟空" vs "孙悟空(超一)". Pick shortest for clean display?
+                   # Let's pick the one that looks most like a name.
+                   display_map[h_code] = sorted(chinese_aliases, key=len)[0] 
                 elif aliases:
                    display_map[h_code] = aliases[0]
             
             # Group Selection
             selected_group_heroes = list(hero_data.keys())
             if hero_groups:
-                group_names = ["全部"] + list(hero_groups.keys())
+                # Groups are sorted keys now
+                group_names = ["全部"] + sorted(list(hero_groups.keys()))
                 selected_group = st.selectbox("选择IP系列 (Anime Source)", group_names)
                 
                 if selected_group != "全部":
@@ -355,7 +422,14 @@ elif menu == "🔎 评论探索":
         
         st.write(f"共 {len(filtered_df)} 条")
         for idx, row in filtered_df.head(20).iterrows():
-            st.markdown(f"**{row.get('author','Unknown')}** | {str(row.get('review_date', '')).split(' ')[0]}")
+            source_badge = f"**[{row.get('source', 'Unknown')}]**"
+            date_display = str(row.get('review_date', '')).split(' ')[0]
+            st.markdown(f"{source_badge} **{row.get('author','Unknown')}** | {date_display}")
+            
+            # YouTube Video Info
+            if row.get('video_title'):
+                st.markdown(f"📺 *Video*: [{row.get('video_title')}]({row.get('video_url')})")
+                
             st.write(row.get('content'))
             st.markdown("---")
 

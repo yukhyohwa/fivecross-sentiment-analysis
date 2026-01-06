@@ -84,13 +84,20 @@ def save_review(review_data):
     finally:
         conn.close()
 
-def get_reviews_for_analysis(game_id=None):
+def get_reviews_for_analysis(game_id=None, force=False):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     try:
-        sql = "SELECT id, content, game_id FROM reviews WHERE detailed_analysis IS NULL"
+        sql = "SELECT id, content, game_id FROM reviews"
+        conditions = []
+        if not force:
+            conditions.append("detailed_analysis IS NULL")
         if game_id:
-            sql += f" AND game_id = '{game_id}'"
+            conditions.append(f"game_id = '{game_id}'")
+        
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+            
         c.execute(sql)
     except:
         migrate_db()
