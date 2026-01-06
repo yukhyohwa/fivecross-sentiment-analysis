@@ -170,6 +170,7 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
                             video_url=t_url,
                             original_date=date_text
                         )
+                        print(f"      [DB] Saved post ({content[:10]}...) by {author}")
                         count_saved += 1
                         
                     except Exception as e:
