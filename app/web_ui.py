@@ -21,6 +21,14 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import jieba
 import re
+import setuptools # Just to be safe with some imports if needed
+
+def load_stopwords():
+    stop_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'stopwords.txt')
+    if os.path.exists(stop_path):
+        with open(stop_path, 'r', encoding='utf-8') as f:
+            return set([line.strip() for line in f if line.strip()])
+    return set()
 
 # Page Configuration
 st.set_page_config(
@@ -217,12 +225,16 @@ if menu == "📊 总览大屏":
                      break
              
              try:
+                 # Load stopwords
+                 stopwords = load_stopwords()
+                 
                  wc_args = {
                     "width": 1000, 
                     "height": 400, 
                     "background_color": 'white', 
                     "collocations": False,
-                    "max_words": 150
+                    "max_words": 150,
+                    "stopwords": stopwords
                  }
                  if font_path:
                      wc_args["font_path"] = font_path
@@ -231,7 +243,7 @@ if menu == "📊 总览大屏":
              except Exception as e:
                  st.error(f"WordCloud Error: {e}")
                  # Fallback
-                 wc = WordCloud(width=1000, height=400, background_color='white').generate(cut_text)
+                 wc = WordCloud(width=1000, height=400, background_color='white', stopwords=load_stopwords()).generate(cut_text)
              
              fig_wc, ax = plt.subplots(figsize=(12, 5))
              ax.imshow(wc, interpolation='bilinear')
@@ -469,4 +481,24 @@ elif menu == "🔧 配置管理":
             # For now, just confirming save. The analysis logic needs to reload this.
         except json.JSONDecodeError:
             st.error("JSON 格式错误，请检查语法。")
+
+    st.markdown("---")
+    st.subheader("🚫 停用词管理 (Stopwords)")
+    st.info("在这里编辑词云中需要忽略的关键词，每行一个词。")
+    
+    stop_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'stopwords.txt')
+    current_stopwords = ""
+    if os.path.exists(stop_path):
+        with open(stop_path, 'r', encoding='utf-8') as f:
+            current_stopwords = f.read()
+    
+    edited_stopwords = st.text_area("停用词列表", current_stopwords, height=300)
+    
+    if st.button("保存停用词"):
+        try:
+            with open(stop_path, 'w', encoding='utf-8') as f:
+                f.write(edited_stopwords)
+            st.success("停用词已保存！")
+        except Exception as e:
+            st.error(f"保存失败: {e}")
 
