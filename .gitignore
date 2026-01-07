@@ -10,3 +10,4 @@ output/
 .streamlit/
 .streamlit/secrets.toml
 data/*.jsonl
+*.db
