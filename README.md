@@ -29,28 +29,29 @@ A professional public sentiment monitoring and sentiment analysis system specifi
 
 ## 🚀 Getting Started
 
-1.  **Environment Setup**:
-    ```bash
-    pip install -r requirements.txt
-    playwright install chromium
-    ```
+1. **Environment Setup**:
 
-2.  **Launch Web Dashboard**:
-    ```bash
-    python main.py web
-    ```
+   ```bash
+   pip install -r requirements.txt
+   playwright install chromium
+   ```
+2. **Launch Web Dashboard**:
 
-3.  **Run Data Crawler**:
-    ```bash
-    # Crawl data from the last 7 days
-    python main.py crawl --days 7
-    ```
+   ```bash
+   python main.py web
+   ```
+3. **Run Data Crawler**:
 
-4.  **Execute Deep Analysis**:
-    ```bash
-    # Use --force to re-process all existing data with the latest NLP rules
-    python main.py analyze --force
-    ```
+   ```bash
+   # Crawl data from the last 7 days
+   python main.py crawl --days 7
+   ```
+4. **Execute Deep Analysis**:
+
+   ```bash
+   # Use --force to re-process all existing data with the latest NLP rules
+   python main.py analyze --force
+   ```
 
 ## 📂 Project Structure
 
