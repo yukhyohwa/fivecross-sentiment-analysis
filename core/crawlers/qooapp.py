@@ -1,10 +1,17 @@
 import time
 import random
 import datetime
+import json
+import os
 from core.crawlers.base import parse_date, save_review_helper
+
+BACKUP_FILE = "data/qooapp_backup.jsonl"
 
 def scrape_qooapp(page, url, cutoff_date, game_key):
     source = "qoo" # Standardizing to 'qoo'
+    
+    # Ensure backup dir
+    os.makedirs("data", exist_ok=True)
     
     page.goto(url)
     time.sleep(3)
@@ -42,13 +49,11 @@ def scrape_qooapp(page, url, cutoff_date, game_key):
                      time_el = el.locator(".time").first
                      if time_el.count() > 0:
                          date_text = time_el.inner_text().strip()
-                         if len(date_text) >= 10:
-                             dt_str = date_text[:10]
-                             dt = datetime.datetime.strptime(dt_str, '%Y-%m-%d')
-                             if dt < cutoff_date:
-                                 reached_cutoff = True
-                                 print(f"  Reached old data ({dt_str}), stopping scroll.")
-                                 break
+                         dt_val, _ = parse_date(date_text)
+                         if dt_val and dt_val < cutoff_date:
+                             reached_cutoff = True
+                             print(f"  Reached old data ({date_text}), stopping scroll.")
+                             break
                 except:
                     pass
         
@@ -61,36 +66,55 @@ def scrape_qooapp(page, url, cutoff_date, game_key):
                 break
         else:
             no_change_count = 0
-            print(f"  [{source}] Looping... found {current_count} reviews.")
+            # print(f"  [{source}] Looping... found {current_count} reviews.")
             
         reviews_collected_on_page = current_count
         
-    # 3. Parse
+    # 3. Parse and Save
     reviews = page.locator(".comment").all()
     print(f"  [{source}] Parsing {len(reviews)} items...")
     
-    for rev in reviews:
-        try:
-            author = rev.locator(".username").first.inner_text().strip()
-            content = rev.locator(".comment-content-box").first.inner_text().strip()
-            
-            rating = 0
-            if rev.locator(".score").count() > 0:
-                try:
-                    r_text = rev.locator(".score").first.inner_text().strip()
-                    rating = float(r_text)
-                except: pass
-            
-            date_str = "Unknown"
-            if rev.locator(".time").count() > 0:
-                date_str = rev.locator(".time").first.inner_text().strip()
-            
+    count_saved = 0
+    with open(BACKUP_FILE, "a", encoding="utf-8") as f_backup:
+        for rev in reviews:
             try:
-                if len(date_str) >= 10:
-                    dt = datetime.datetime.strptime(date_str[:10], '%Y-%m-%d')
-                    if dt < cutoff_date: continue
-            except: pass
-            
-            save_review_helper(game_key, author, content, rating, date_str, source, original_date=date_str)
-        except Exception as e:
-             pass
+                author_el = rev.locator(".username").first
+                if not author_el.count(): continue
+                author = author_el.inner_text().strip()
+                
+                content_el = rev.locator(".comment-content-box").first
+                content = content_el.inner_text().strip() if content_el.count() else ""
+                
+                rating = 0
+                if rev.locator(".score").count() > 0:
+                    try:
+                        r_text = rev.locator(".score").first.inner_text().strip()
+                        rating = float(r_text)
+                    except: pass
+                
+                date_text = "Unknown"
+                if rev.locator(".time").count() > 0:
+                    date_text = rev.locator(".time").first.inner_text().strip()
+                
+                dt_obj, date_str = parse_date(date_text)
+                if dt_obj and dt_obj < cutoff_date: 
+                    continue
+                
+                # Backup Record
+                record = {
+                    "game_key": game_key,
+                    "author": author,
+                    "content": content,
+                    "rating": rating,
+                    "raw_date": date_text,
+                    "parsed_date": date_str,
+                    "source": source,
+                    "crawled_at": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                f_backup.write(json.dumps(record, ensure_ascii=False) + "\n")
+                
+                save_review_helper(game_key, author, content, rating, date_str, source, original_date=date_text)
+                count_saved += 1
+            except Exception as e:
+                 pass
+    print(f"  [{source}] Done. Saved {count_saved} reviews to DB and {BACKUP_FILE}.")

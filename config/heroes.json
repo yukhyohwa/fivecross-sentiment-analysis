@@ -4,496 +4,511 @@
             "Dragon Ball (七龍珠)": {
                 "Goku_SSJ": [
                     "孙悟空（超一）",
-                    "超一悟空",
-                    "超赛悟空",
-                    "SSJ Goku",
-                    "超級賽亞人孫悟空"
+                    "孫悟空（超一）",
+                    "超級賽亞人孫悟空",
+                    "Super Saiyan Goku",
+                    "SSJ Goku"
                 ],
                 "Goku_New": [
                     "孙悟空（新）",
-                    "新悟空",
-                    "New Goku",
-                    "新孫悟空"
+                    "孫悟空（新）",
+                    "New Goku"
                 ],
                 "Goku_Generic": [
                     "孙悟空",
+                    "孫悟空",
                     "悟空",
                     "卡卡罗特",
+                    "卡卡羅特",
                     "Son Goku",
                     "Goku",
-                    "Kakarot",
-                    "孫悟空"
+                    "Kakarot"
                 ],
                 "Vegeta": [
                     "贝吉塔",
-                    "悲剧塔",
-                    "Vegeta",
                     "貝吉塔",
-                    "達爾"
+                    "達爾",
+                    "达尔",
+                    "Vegeta",
+                    "Bejita"
                 ],
                 "Trunks": [
                     "特兰克斯",
-                    "大特",
-                    "Trunks",
-                    "特蘭克斯"
+                    "特蘭克斯",
+                    "特南克斯",
+                    "Trunks"
                 ],
                 "Frieza": [
                     "弗利萨",
-                    "大王",
+                    "弗利薩",
                     "弗利沙",
                     "Frieza",
-                    "Freeza",
-                    "弗利薩",
-                    "Frieza"
+                    "Freeza"
                 ],
                 "Buu": [
                     "魔人布欧",
-                    "布欧",
-                    "Majin Buu",
-                    "Buu",
+                    "魔人布歐",
                     "魔人普烏",
-                    "普烏"
+                    "普烏",
+                    "Majin Buu",
+                    "Buu"
                 ],
                 "Android18": [
                     "人造人18号",
-                    "18号",
+                    "人造人18號",
                     "Android 18",
-                    "#18",
-                    "人造人18號"
+                    "C18",
+                    "18號"
                 ],
                 "Krillin": [
                     "库林",
+                    "庫林",
                     "克林",
                     "Krillin",
-                    "Kuririn",
-                    "克林"
+                    "Kuririn"
                 ],
-                "Bulma": [
-                    "布尔玛",
-                    "Bulma",
-                    "布爾瑪"
+                "Gohan": [
+                    "孙悟饭",
+                    "孫悟飯",
+                    "悟飯",
+                    "Son Gohan",
+                    "Gohan"
+                ],
+                "Piccolo": [
+                    "比克",
+                    "比克大魔王",
+                    "Piccolo"
                 ]
             },
             "One Piece (航海王)": {
-                "Luffy_Kid": [
-                    "蒙奇·D·路飞 小",
-                    "小路飞",
-                    "Kid Luffy",
-                    "小魯夫"
-                ],
                 "Luffy_Adult": [
-                    "蒙奇·D·路飞 大",
-                    "大路飞",
-                    "Gear 4 Luffy",
-                    "Boundman",
-                    "大魯夫",
-                    "路飞",
                     "蒙奇·D·路飞",
+                    "蒙奇·D·路飛",
+                    "路飞",
+                    "路飛",
+                    "魯夫",
+                    "蒙其·D·魯夫",
                     "Luffy",
                     "Monkey D. Luffy",
-                    "魯夫"
+                    "五档",
+                    "尼卡"
                 ],
                 "Zoro": [
                     "罗罗诺亚·索隆",
+                    "羅羅亞·索隆",
                     "索隆",
-                    "Roronoa Zoro",
+                    "佐罗",
                     "Zoro",
-                    "Zolo",
-                    "羅羅亞·索隆"
+                    "Roronoa Zoro"
                 ],
                 "Sanji": [
                     "山治",
                     "香吉士",
+                    "香吉士",
                     "Sanji",
-                    "香吉士"
+                    "黑足"
                 ],
                 "Nami": [
-                    "奈美/娜美",
                     "奈美",
                     "娜美",
-                    "Nami",
-                    "娜美"
+                    "Nami"
                 ],
                 "Usopp": [
                     "乌索普",
-                    "骗人布",
-                    "Usopp",
-                    "騙人布"
+                    "騙人布",
+                    "Usopp"
                 ],
                 "Chopper": [
                     "托尼托尼·乔巴",
+                    "托尼托尼·喬巴",
+                    "喬巴",
                     "乔巴",
                     "Tony Tony Chopper",
-                    "Chopper",
-                    "喬巴"
+                    "Chopper"
                 ],
                 "Hancock": [
                     "波雅·汉库克",
+                    "波雅·漢庫克",
+                    "漢庫克",
                     "汉库克",
                     "女帝",
-                    "Boa Hancock",
-                    "Hancock",
-                    "波雅·漢考克"
+                    "Snake Princess",
+                    "Boa Hancock"
                 ],
                 "Robin": [
                     "妮可·罗宾",
+                    "妮可·羅賓",
+                    "羅賓",
                     "罗宾",
                     "Nico Robin",
-                    "Robin",
-                    "羅賓",
-                    "妮可羅賓"
+                    "Robin"
                 ],
-                "Law": [
-                    "特拉法尔加·罗",
-                    "罗",
-                    "Trafalgar Law",
-                    "Law",
-                    "羅"
+                "Ace": [
+                    "波特卡斯·D·艾斯",
+                    "艾斯",
+                    "Ace",
+                    "Portgas D. Ace"
+                ],
+                "Sabo": [
+                    "萨博",
+                    "薩博",
+                    "薩波",
+                    "Sabo"
+                ],
+                "Whitebeard": [
+                    "爱德华·纽盖特",
+                    "愛德華·紐蓋特",
+                    "白胡子",
+                    "白鬍子",
+                    "Whitebeard",
+                    "Edward Newgate"
                 ]
             },
             "Naruto (火影忍者)": {
-                "Naruto_Kid": [
-                    "漩涡鸣人 小",
-                    "小鸣人",
-                    "Kid Naruto",
-                    "小鳴人"
-                ],
-                "Naruto_Adult": [
-                    "漩涡鸣人 大",
-                    "大鸣人",
-                    "Adult Naruto",
-                    "大鳴人",
+                "Naruto": [
                     "漩涡鸣人",
+                    "漩渦鳴人",
                     "鸣人",
+                    "鳴人",
                     "Naruto Uzumaki",
                     "Naruto",
-                    "漩渦鳴人"
+                    "九尾"
+                ],
+                "Sasuke": [
+                    "宇智波佐助",
+                    "佐助",
+                    "Sasuke Uchiha",
+                    "Sasuke"
                 ],
                 "Kakashi": [
                     "旗木卡卡西",
                     "卡卡西",
                     "Kakashi Hatake",
-                    "Kakashi",
-                    "Copy Ninja",
-                    "卡卡西老师",
-                    "旗木卡卡西"
+                    "Kakashi"
                 ],
-                "Madara": [
-                    "宇智波斑",
-                    "斑",
-                    "Madara Uchiha",
-                    "Madara",
-                    "宇智波斑"
+                "Gaara": [
+                    "我爱罗",
+                    "我愛羅",
+                    "Gaara"
+                ],
+                "Minato": [
+                    "波风水门",
+                    "波風水門",
+                    "水門",
+                    "水门",
+                    "Minato Namikaze",
+                    "Minato",
+                    "四代目"
                 ],
                 "Itachi": [
                     "宇智波鼬",
                     "鼬",
                     "Itachi Uchiha",
                     "Itachi",
-                    "鼬神",
-                    "宇智波鼬"
-                ],
-                "Sasuke_Shippuden": [
-                    "佐助(疾风传)T",
-                    "佐助(疾风传)",
-                    "疾风佐助",
-                    "Shippuden Sasuke",
-                    "疾風傳佐助"
-                ],
-                "Sasuke_Generic": [
-                    "佐助",
-                    "Sasuke Uchiha",
-                    "Sasuke",
-                    "佐助"
-                ],
-                "Minato": [
-                    "波风水门T",
-                    "波风水门",
-                    "水门",
-                    "黄色闪光",
-                    "Minato Namikaze",
-                    "Minato",
-                    "Fourth Hokage",
-                    "波風水門"
+                    "鼬神"
                 ],
                 "Pain": [
-                    "佩恩(天道)",
                     "佩恩",
                     "天道",
-                    "Pain",
-                    "Pein",
-                    "佩恩"
+                    "培因",
+                    "Pain"
                 ],
-                "Gaara": [
-                    "我爱罗",
-                    "Gaara",
-                    "我愛羅"
+                "Hinata": [
+                    "日向雏田",
+                    "日向雛田",
+                    "雏田",
+                    "雛田",
+                    "Hinata Hyuga",
+                    "Hinata"
                 ],
                 "Jiraiya": [
                     "自来也",
+                    "自來也",
                     "好色仙人",
-                    "Jiraiya",
-                    "自來也"
-                ],
-                "Tsunade": [
-                    "纲手",
-                    "纲手婆婆",
-                    "Tsunade",
-                    "綱手"
+                    "Jiraiya"
                 ],
                 "Sakura": [
                     "春野樱",
+                    "春野櫻",
                     "小樱",
+                    "小櫻",
                     "Sakura Haruno",
-                    "Sakura",
-                    "春野櫻"
-                ]
-            },
-            "Demon Slayer (鬼滅之刃)": {
-                "Tanjiro": [
-                    "灶门炭治郎",
-                    "炭治郎",
-                    "Tanjiro Kamado",
-                    "Tanjiro",
-                    "竈門炭治郎"
-                ],
-                "Nezuko": [
-                    "灶门祢豆子",
-                    "祢豆子",
-                    "Nezuko Kamado",
-                    "Nezuko",
-                    "竈門禰豆子"
-                ],
-                "Zenitsu": [
-                    "我妻善逸",
-                    "善逸",
-                    "Zenitsu Agatsuma",
-                    "Zenitsu",
-                    "我妻善逸"
-                ],
-                "Inosuke": [
-                    "嘴平伊之助T",
-                    "嘴平伊之助",
-                    "伊之助",
-                    "猪猪",
-                    "Inosuke Hashibira",
-                    "Inosuke",
-                    "嘴平伊之助"
-                ],
-                "Shinobu": [
-                    "蝴蝶忍T",
-                    "蝴蝶忍",
-                    "虫柱",
-                    "Shinobu Kocho",
-                    "Shinobu",
-                    "胡蝶忍"
-                ],
-                "Rengoku": [
-                    "炼狱杏寿郎",
-                    "杏寿郎",
-                    "大哥",
-                    "炎柱",
-                    "Kyojuro Rengoku",
-                    "Rengoku",
-                    "煉獄杏壽郎"
+                    "Sakura"
                 ]
             },
             "Bleach (死神)": {
                 "Ichigo": [
                     "黑崎一护",
-                    "一护",
-                    "Ichigo Kurosaki",
-                    "Ichigo",
                     "黑崎一護",
-                    "一護"
+                    "一护",
+                    "一護",
+                    "黑崎",
+                    "Ichigo Kurosaki",
+                    "Ichigo"
                 ],
                 "Rukia": [
                     "朽木露琪亚",
+                    "朽木露琪亞",
                     "露琪亚",
+                    "露琪亞",
+                    "露奇亞",
                     "Rukia Kuchiki",
-                    "Rukia",
-                    "朽木露琪亞"
+                    "Rukia"
                 ],
                 "Orihime": [
                     "井上织姬",
+                    "井上織姬",
                     "织姬",
+                    "織姬",
                     "Orihime Inoue",
-                    "Orihime",
-                    "井上織姬"
-                ],
-                "Uryu": [
-                    "石田雨龙",
-                    "雨龙",
-                    "Uryu Ishida",
-                    "Uryu",
-                    "石田雨龍"
+                    "Orihime"
                 ],
                 "Byakuya": [
                     "朽木白哉",
                     "白哉",
-                    "大白",
                     "Byakuya Kuchiki",
-                    "Byakuya",
-                    "朽木白哉"
+                    "Byakuya"
                 ],
                 "Toshiro": [
                     "日番谷冬狮郎",
+                    "日番谷冬獅郎",
                     "冬狮郎",
+                    "冬獅郎",
                     "小白",
                     "Toshiro Hitsugaya",
-                    "Toshiro",
-                    "日番谷冬獅郎"
+                    "Toshiro"
                 ],
-                "Yoruichi": [
-                    "四枫院夜一",
-                    "夜一",
-                    "Yoruichi Shihoin",
-                    "Yoruichi",
-                    "四楓院夜一"
+                "Kenpachi": [
+                    "更木剑八",
+                    "更木劍八",
+                    "剑八",
+                    "劍八",
+                    "Kenpachi Zaraki",
+                    "Kenpachi"
                 ],
-                "Starrk": [
-                    "史塔克",
-                    "Coyote Starrk",
-                    "Starrk",
-                    "史塔克"
+                "Uryu": [
+                    "石田雨龙",
+                    "石田雨龍",
+                    "雨龙",
+                    "雨龍",
+                    "Uryu Ishida",
+                    "Uryu"
+                ],
+                "Aizen": [
+                    "蓝染惣右介",
+                    "藍染惣右介",
+                    "蓝染",
+                    "藍染",
+                    "Sosuke Aizen",
+                    "Aizen"
                 ]
             },
             "Jujutsu Kaisen (咒術迴戰)": {
                 "Itadori": [
-                    "虎杖悠人",
+                    "虎杖悠仁",
                     "虎杖",
                     "Yuji Itadori",
-                    "Itadori",
-                    "虎杖悠仁"
+                    "Itadori"
                 ],
                 "Fushiguro": [
-                    "伏黑惠T",
                     "伏黑惠",
                     "惠",
                     "Megumi Fushiguro",
-                    "Fushiguro",
-                    "伏黑惠"
+                    "Fushiguro"
                 ],
                 "Nobara": [
                     "钉崎野蔷薇",
+                    "釘崎野薔薇",
                     "野蔷薇",
+                    "野薔薇",
                     "Nobara Kugisaki",
-                    "Nobara",
-                    "釘崎野薔薇"
+                    "Nobara"
                 ],
                 "Gojo": [
                     "五条悟",
+                    "五條悟",
                     "5t5",
+                    "过年了",
                     "Satoru Gojo",
-                    "Gojo",
-                    "五條悟"
+                    "Gojo"
+                ],
+                "Sukuna": [
+                    "两面宿傩",
+                    "兩面宿儺",
+                    "大爷",
+                    "大爺",
+                    "宿傩",
+                    "宿儺",
+                    "Ryomen Sukuna",
+                    "Sukuna"
                 ],
                 "Nanami": [
                     "七海建人",
                     "七海",
                     "娜娜明",
                     "Kento Nanami",
-                    "Nanami",
-                    "七海建人"
+                    "Nanami"
                 ],
-                "Inumaki": [
-                    "狗卷棘",
-                    "狗卷",
-                    "Toge Inumaki",
-                    "Inumaki",
-                    "狗卷棘"
+                "Geto": [
+                    "夏油杰",
+                    "夏油傑",
+                    "夏油",
+                    "Suguru Geto",
+                    "Geto"
+                ],
+                "Mahito": [
+                    "真人",
+                    "Mahito"
+                ],
+                "Yuta": [
+                    "乙骨忧太",
+                    "乙骨憂太",
+                    "乙骨",
+                    "Yuta Okkotsu",
+                    "Yuta"
+                ],
+                "Toji": [
+                    "伏黑甚尔",
+                    "伏黑甚爾",
+                    "甚尔",
+                    "甚爾",
+                    "爹咪",
+                    "Toji Fushiguro",
+                    "Toji"
+                ],
+                "Maki": [
+                    "禅院真希",
+                    "真希",
+                    "Maki Zenin",
+                    "Maki"
                 ]
             },
             "Hunter x Hunter (獵人)": {
                 "Gon": [
-                    "杰富力士",
+                    "杰·富力士",
                     "小杰",
+                    "小傑",
                     "Gon Freecss",
-                    "Gon",
-                    "小傑·富力士"
+                    "Gon"
                 ],
                 "Killua": [
-                    "奇犽T",
                     "奇犽",
+                    "凱路亞",
                     "Killua Zoldyck",
-                    "Killua",
-                    "奇犽·揍敵客",
-                    "奇犽",
-                    "奇牙",
                     "Killua"
                 ],
-                "Youpi": [
-                    "蒙图图尤匹",
-                    "尤匹",
-                    "Menthuthuyoupi",
-                    "Youpi",
-                    "尤匹"
+                "Kurapika": [
+                    "酷拉皮卡",
+                    "酷拉皮卡",
+                    "Kurapika"
+                ],
+                "Leorio": [
+                    "雷欧力",
+                    "雷歐力",
+                    "Leorio Paradinight",
+                    "Leorio"
                 ],
                 "Hisoka": [
-                    "西索T",
                     "西索",
-                    "Hisoka Morow",
-                    "Hisoka",
-                    "西索"
-                ]
-            },
-            "Undead Unluck (不死不運)": {
-                "Andy": [
-                    "安迪",
-                    "Andy",
-                    "安迪"
+                    "Hisoka"
                 ],
-                "Fuko": [
-                    "出云风子",
-                    "风子",
-                    "Fuko Izumo",
-                    "Fuko",
-                    "出雲風子"
+                "Chrollo": [
+                    "库洛洛",
+                    "庫洛洛",
+                    "團長",
+                    "团长",
+                    "Chrollo Lucilfer",
+                    "Chrollo"
+                ],
+                "Netero": [
+                    "尼特罗",
+                    "艾薩克·尼特羅",
+                    "会长",
+                    "會長",
+                    "Isaac Netero",
+                    "Netero"
+                ],
+                "Meruem": [
+                    "梅路艾姆",
+                    "蟻王",
+                    "蚁王",
+                    "Meruem"
+                ],
+                "Pitou": [
+                    "尼飞比特",
+                    "尼飛彼多",
+                    "猫女",
+                    "貓女",
+                    "Neferpitou",
+                    "Pitou"
+                ],
+                "Youpi": [
+                    "尤匹",
+                    "尤比",
+                    "Menthuthuyoupi",
+                    "Youpi"
                 ]
             },
             "Mashle (肌肉魔法使-MASHLE-)": {
                 "Mash": [
                     "马修·班迪德",
+                    "馬修·班迪德",
                     "马修",
+                    "馬修",
                     "Mash Burnedead",
-                    "Mash",
-                    "馬修"
+                    "Mash"
                 ],
                 "Lance": [
                     "兰斯·克莱恩",
+                    "蘭斯·克萊恩",
                     "兰斯",
+                    "蘭斯",
                     "Lance Crown",
-                    "Lance",
-                    "蘭斯"
+                    "Lance"
+                ],
+                "Dot": [
+                    "多特·巴雷特",
+                    "多特·巴雷特",
+                    "多特",
+                    "Dot Barrett",
+                    "Dot"
+                ],
+                "Finn": [
+                    "芬·艾姆斯",
+                    "芬·艾姆斯",
+                    "芬",
+                    "Finn Ames",
+                    "Finn"
+                ],
+                "Lemon": [
+                    "柠檬·欧文",
+                    "檸檬·歐文",
+                    "柠檬",
+                    "檸檬",
+                    "Lemon Irvine",
+                    "Lemon"
+                ],
+                "Abel": [
+                    "阿贝尔",
+                    "阿貝爾",
+                    "Abel Walker",
+                    "Abel"
                 ]
             },
-            "Kaiju No. 8 (怪兽8号)": {
-                "Kafka": [
-                    "日比野卡夫卡T",
-                    "日比野卡夫卡",
-                    "卡夫卡",
-                    "Kafka Hibino",
-                    "Kafka",
-                    "日比野卡夫卡"
-                ]
-            },
-            "JoJo (JOJO)": {
-                "Jotaro": [
-                    "空条承太郎T",
-                    "空条承太郎",
-                    "承太郎",
-                    "JOJO",
-                    "卖鱼强",
-                    "Jotaro Kujo",
-                    "Jotaro",
-                    "空條承太郎"
-                ]
-            },
-            "Saint Seiya (圣斗士)": {
-                "Aiolia": [
-                    "艾欧里亚",
-                    "Aiolia",
-                    "艾歐里亞"
+            "Undead Unluck (不死不運)": {
+                "Andy": [
+                    "安迪",
+                    "不死",
+                    "Andy"
+                ],
+                "Fuko": [
+                    "出云风子",
+                    "出雲風子",
+                    "风子",
+                    "風子",
+                    "不運",
+                    "Fuko Izumo",
+                    "Fuko"
                 ]
             }
         }

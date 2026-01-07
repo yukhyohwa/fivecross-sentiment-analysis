@@ -107,6 +107,17 @@ st.markdown("""
     }
     .feedback-pos { border-left-color: #2ecc71; }
     .feedback-neg { border-left-color: #e74c3c; }
+    .mode-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        margin: 2px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        background-color: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -167,7 +178,7 @@ with st.sidebar:
     selected_sources = st.multiselect("选择来源", all_sources, default=all_sources)
     
     if "taptap_intl" in selected_sources:
-        st.info("⚠️ Note: TapTap Intl 暂时不能获取准确评论时间，时间可能为爬虫时间。")
+        pass
 
 # Filter by Source
 if not df.empty and 'source' in df.columns and selected_sources:
@@ -301,49 +312,54 @@ elif menu == "🦸 英雄专项":
                                  elif isinstance(g_heroes, list):
                                      hero_groups[g_name] = g_heroes
                                      
-                             # 2026-01-06: User request to move anticipated IPs to "Others" folder
-                             # Remove them from specific groups so they fall into 'ungrouped' logic
-                             anticipated_ips = ["Kaiju No. 8 (怪兽8号)", "JoJo (JOJO)", "Saint Seiya (圣斗士)"]
-                             for ip in anticipated_ips:
-                                 if ip in hero_groups:
-                                     del hero_groups[ip]
+                             pass
                 except: pass
 
-            # Create a display map: CodeName -> Display Name (Chinese)
+            # Create a display map: CodeName -> Display Name
             display_map = {}
-            keywords = GAMES[selected_game_key].get('keywords', {})
+            hero_to_first_alias = {}
             
-            # Pre-fill with CodeName
+            # Load first aliases from heroes.json for best display names
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        fc = json.load(f)
+                        if selected_game_key in fc and "Groups" in fc[selected_game_key]:
+                             groups = fc[selected_game_key]["Groups"]
+                             for g_heroes in groups.values():
+                                 if isinstance(g_heroes, dict):
+                                     for h_code, aliases in g_heroes.items():
+                                         if aliases:
+                                             hero_to_first_alias[h_code] = aliases[0]
+                except: pass
+
             for h_code in hero_data.keys():
-                display_map[h_code] = h_code 
-                
-            # Try to find a Chinese alias
-            # Optimize: Reverse lookup from new config structure if possible, but keywords map is flat.
-            # We can scan the flat map.
-            for h_code in hero_data.keys():
-                # Find all aliases for this code
-                aliases = [k for k, v in keywords.items() if v == h_code]
-                # Prioritize: 1. Chinese (no alpha) 2. First available
-                chinese_aliases = [a for a in aliases if not re.search('[a-zA-Z]', a)]
-                if chinese_aliases:
-                   # Pick shortest Chinese alias usually implies the name? Or longest? 
-                   # "孙悟空" vs "孙悟空(超一)". Pick shortest for clean display?
-                   # Let's pick the one that looks most like a name.
-                   display_map[h_code] = sorted(chinese_aliases, key=len)[0] 
-                elif aliases:
-                   display_map[h_code] = aliases[0]
+                # Priority 1: First alias from heroes.json (usually Simplified Chinese Full Name)
+                if h_code in hero_to_first_alias:
+                    display_map[h_code] = hero_to_first_alias[h_code]
+                else:
+                    # Fallback login: find shortest Chinese alias from keywords
+                    keywords = GAMES[selected_game_key].get('keywords', {})
+                    aliases = [k for k, v in keywords.items() if v == h_code]
+                    chinese_aliases = [a for a in aliases if not re.search('[a-zA-Z]', a)]
+                    if chinese_aliases:
+                        display_map[h_code] = sorted(chinese_aliases, key=len)[0]
+                    elif aliases:
+                        display_map[h_code] = aliases[0]
+                    else:
+                        display_map[h_code] = h_code
             
             # Group Selection
-            selected_group_heroes = list(hero_data.keys())
-            
-            # Calculate all heroes explicitly defined in groups
+            # 2026-01-07: Filter out heroes that are NOT in a configured group (remove unwanted IPs from UI)
             all_configured_heroes = set()
             if hero_groups:
                 for h_list in hero_groups.values():
                     all_configured_heroes.update(h_list)
-                    
-            # Find heroes that are present in data but NOT in any config group
-            ungrouped_heroes = [h for h in hero_data.keys() if h not in all_configured_heroes]
+            
+            selected_group_heroes = [h for h in hero_data.keys() if h in all_configured_heroes]
+            
+            # stragglers/others logic (if any are left that we actually want)
+            ungrouped_heroes = [] # Force empty as we don't want to show unconfigured IPs
 
             if hero_groups:
                 # Groups are sorted keys now
@@ -430,12 +446,17 @@ elif menu == "⚙️ 玩法反馈":
                     c1, c2 = st.columns(2)
                     with c1:
                         st.subheader(f"正面 ({len(pos)})")
-                        for x in pos[:20]:
-                             st.markdown(f"<div class='feedback-box feedback-pos'>{x['text']}</div>", unsafe_allow_html=True)
+                        # Show more items and sort by length to prioritize descriptive reviews
+                        pos_sorted = sorted(pos, key=lambda x: len(x['text']), reverse=True)
+                        for x in pos_sorted[:100]:
+                             tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
+                             st.markdown(f"<div class='feedback-box feedback-pos'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
                     with c2:
                         st.subheader(f"负面/问题 ({len(neg)})")
-                        for x in neg[:20]:
-                             st.markdown(f"<div class='feedback-box feedback-neg'>{x['text']}</div>", unsafe_allow_html=True)
+                        neg_sorted = sorted(neg, key=lambda x: len(x['text']), reverse=True)
+                        for x in neg_sorted[:100]:
+                             tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
+                             st.markdown(f"<div class='feedback-box feedback-neg'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
 
 elif menu == "🔎 评论探索":
     st.title("🔎 评论探索")

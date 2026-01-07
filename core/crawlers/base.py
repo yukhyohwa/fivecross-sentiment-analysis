@@ -11,7 +11,17 @@ def parse_date(text):
     if match:
         try:
             dt = datetime.datetime.strptime(match.group(1).replace('/', '-'), '%Y-%m-%d')
-            return dt, match.group(1)
+            return dt, dt.strftime('%Y-%m-%d')
+        except:
+            pass
+
+    # 1b. Try MM/DD/YYYY (Common in international versions)
+    match_us = re.search(r'(\d{1,2}[/-]\d{1,2}[/-]\d{4})', text)
+    if match_us:
+        try:
+            cleaned = match_us.group(1).replace('/', '-')
+            dt = datetime.datetime.strptime(cleaned, '%m-%d-%Y')
+            return dt, dt.strftime('%Y-%m-%d')
         except:
             pass
             
