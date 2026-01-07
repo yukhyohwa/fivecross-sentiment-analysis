@@ -32,6 +32,23 @@ def load_stopwords():
             return set([line.strip() for line in f if line.strip()])
     return set()
 
+def format_tooltip(meta):
+    if not meta:
+        return ""
+    full_c = meta.get('full_content', '')
+    # Remove extra spaces/newlines to keep it compact
+    clean_c = " ".join(full_c.split())
+    # Truncate to 100 characters as requested
+    if len(clean_c) > 100:
+        clean_c = clean_c[:100] + "..."
+    
+    # Safe quotes for HTML attributes
+    clean_c = clean_c.replace("'", '’').replace('"', '”')
+    source = meta.get('source', '未知')
+    date = meta.get('date', '未知')
+    
+    return html.escape(f"完整评论: {clean_c}\n来源: {source}\n时间: {date}")
+
 # Page Configuration
 st.set_page_config(
     page_title="Multi-Game Monitor",
@@ -415,23 +432,13 @@ elif menu == "🦸 英雄专项":
                                 st.write(f"🙂 好评 ({len(pos)})")
                                 for p in pos:
                                     meta = p.get('metadata')
-                                    tooltip = ""
-                                    if meta:
-                                        full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
-                                        source = meta.get('source', '')
-                                        date = meta.get('date', '')
-                                        tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
+                                    tooltip = format_tooltip(meta)
                                     st.markdown(f'<div class="feedback-box feedback-pos" title="{tooltip}">{html.escape(p["text"])}</div>', unsafe_allow_html=True)
                             with c2:
                                 st.write(f"😡 差评/建议 ({len(neg)})")
                                 for n in neg:
                                     meta = n.get('metadata')
-                                    tooltip = ""
-                                    if meta:
-                                        full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
-                                        source = meta.get('source', '')
-                                        date = meta.get('date', '')
-                                        tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
+                                    tooltip = format_tooltip(meta)
                                     st.markdown(f'<div class="feedback-box feedback-neg" title="{tooltip}">{html.escape(n["text"])}</div>', unsafe_allow_html=True)
                     
                     render_feedback("General", tabs[0])
@@ -472,12 +479,7 @@ elif menu == "⚙️ 玩法反馈":
                         pos_sorted = sorted(pos, key=lambda x: len(x['text']), reverse=True)
                         for x in pos_sorted[:100]:
                              meta = x.get('metadata')
-                             tooltip = ""
-                             if meta:
-                                 full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
-                                 source = meta.get('source', '')
-                                 date = meta.get('date', '')
-                                 tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
+                             tooltip = format_tooltip(meta)
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
                              st.markdown(f'<div class="feedback-box feedback-pos" title="{tooltip}">{tag_html}{html.escape(x["text"])}</div>', unsafe_allow_html=True)
                     with c2:
@@ -485,12 +487,7 @@ elif menu == "⚙️ 玩法反馈":
                         neg_sorted = sorted(neg, key=lambda x: len(x['text']), reverse=True)
                         for x in neg_sorted[:100]:
                              meta = x.get('metadata')
-                             tooltip = ""
-                             if meta:
-                                 full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
-                                 source = meta.get('source', '')
-                                 date = meta.get('date', '')
-                                 tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
+                             tooltip = format_tooltip(meta)
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
                              st.markdown(f'<div class="feedback-box feedback-neg" title="{tooltip}">{tag_html}{html.escape(x["text"])}</div>', unsafe_allow_html=True)
 
