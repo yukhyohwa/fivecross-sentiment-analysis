@@ -14,7 +14,8 @@ import time
 import io
 
 from core.db import get_all_data, init_db
-from core.analysis import analyze_sentiment, extract_keywords, detailed_aspect_analysis, update_analysis_results
+# These were unused in the UI and causing ImportErrors due to missing/moved functions
+# from core.analysis import analyze_sentiment, detailed_aspect_analysis
 
 from config.settings import GAMES
 from wordcloud import WordCloud
