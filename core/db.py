@@ -92,7 +92,7 @@ def get_reviews_for_analysis(game_id=None, force=False):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     try:
-        sql = "SELECT id, content, game_id FROM reviews"
+        sql = "SELECT id, content, game_id, source, review_date FROM reviews"
         conditions = []
         if not force:
             conditions.append("detailed_analysis IS NULL")

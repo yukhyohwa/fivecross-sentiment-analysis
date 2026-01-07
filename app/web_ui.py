@@ -119,6 +119,12 @@ st.markdown("""
         color: #0369a1;
         border: 1px solid #bae6fd;
     }
+    .feedback-box:hover {
+        background-color: #f0f7ff;
+        cursor: help;
+        border-left-width: 6px;
+        transition: all 0.2s;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -407,11 +413,19 @@ elif menu == "🦸 英雄专项":
                             with c1:
                                 st.write(f"🙂 好评 ({len(pos)})")
                                 for p in pos:
-                                    st.markdown(f"<div class='feedback-box feedback-pos'>{p['text']}</div>", unsafe_allow_html=True)
+                                    meta = p.get('metadata')
+                                    tooltip = ""
+                                    if meta:
+                                        tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
+                                    st.markdown(f"<div class='feedback-box feedback-pos' title='{tooltip}'>{p['text']}</div>", unsafe_allow_html=True)
                             with c2:
                                 st.write(f"😡 差评/建议 ({len(neg)})")
                                 for n in neg:
-                                    st.markdown(f"<div class='feedback-box feedback-neg'>{n['text']}</div>", unsafe_allow_html=True)
+                                    meta = n.get('metadata')
+                                    tooltip = ""
+                                    if meta:
+                                        tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
+                                    st.markdown(f"<div class='feedback-box feedback-neg' title='{tooltip}'>{n['text']}</div>", unsafe_allow_html=True)
                     
                     render_feedback("General", tabs[0])
                     render_feedback("Skill", tabs[1])
@@ -450,14 +464,22 @@ elif menu == "⚙️ 玩法反馈":
                         # Show more items and sort by length to prioritize descriptive reviews
                         pos_sorted = sorted(pos, key=lambda x: len(x['text']), reverse=True)
                         for x in pos_sorted[:100]:
+                             meta = x.get('metadata')
+                             tooltip = ""
+                             if meta:
+                                 tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
-                             st.markdown(f"<div class='feedback-box feedback-pos'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
+                             st.markdown(f"<div class='feedback-box feedback-pos' title='{tooltip}'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
                     with c2:
                         st.subheader(f"负面/问题 ({len(neg)})")
                         neg_sorted = sorted(neg, key=lambda x: len(x['text']), reverse=True)
                         for x in neg_sorted[:100]:
+                             meta = x.get('metadata')
+                             tooltip = ""
+                             if meta:
+                                 tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
-                             st.markdown(f"<div class='feedback-box feedback-neg'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
+                             st.markdown(f"<div class='feedback-box feedback-neg' title='{tooltip}'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
 
 elif menu == "🔎 评论探索":
     st.title("🔎 评论探索")

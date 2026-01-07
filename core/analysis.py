@@ -82,7 +82,10 @@ def analyze_sentiment(text):
         
     return round(score, 3), label
 
-def detailed_aspect_analysis(text, game_id="jump_assemble"):
+def detailed_aspect_analysis(text, game_id="jump_assemble", metadata=None):
+    """
+    metadata: optional dict containing 'source', 'date', 'full_content'
+    """
     analysis = {"Heroes": {}, "System": {}}
     game_config = GAMES.get(game_id, GAMES['jump_assemble'])
     hero_map = game_config.get('keywords', {})
@@ -114,7 +117,10 @@ def detailed_aspect_analysis(text, game_id="jump_assemble"):
                         if dim not in analysis["Heroes"][hero_code]:
                             analysis["Heroes"][hero_code][dim] = []
                         analysis["Heroes"][hero_code][dim].append({
-                            "text": clause, "label": label, "score": score
+                            "text": clause, 
+                            "label": label, 
+                            "score": score,
+                            "metadata": metadata
                         })
                         matched_dim = True
                         break
@@ -125,7 +131,10 @@ def detailed_aspect_analysis(text, game_id="jump_assemble"):
                     if "General" not in analysis["Heroes"][hero_code]:
                         analysis["Heroes"][hero_code]["General"] = []
                     analysis["Heroes"][hero_code]["General"].append({
-                        "text": clause, "label": label, "score": score
+                        "text": clause, 
+                        "label": label, 
+                        "score": score,
+                        "metadata": metadata
                     })
 
         for aspect, keywords in GAME_ASPECTS.items():
@@ -139,7 +148,11 @@ def detailed_aspect_analysis(text, game_id="jump_assemble"):
                          tags.append(mode)
                          
                  analysis["System"][aspect].append({
-                     "text": clause, "label": label, "score": score, "tags": tags
+                     "text": clause, 
+                     "label": label, 
+                     "score": score, 
+                     "tags": tags,
+                     "metadata": metadata
                  })
                  
     return json.dumps(analysis, ensure_ascii=False)
@@ -150,10 +163,17 @@ def process_reviews(game_id=None, force=False):
     rows = get_reviews_for_analysis(game_id, force)
     print(f"Analyzing {len(rows)} reviews...")
     for r in rows:
-        rid, content, gid = r
+        rid, content, gid, source, date = r
         if not content: continue
         current_gid = gid if gid else (game_id if game_id else "jump_assemble")
+        
+        metadata = {
+            "source": source,
+            "date": date,
+            "full_content": content
+        }
+        
         score, label = analyze_sentiment(content)
-        details = detailed_aspect_analysis(content, current_gid)
+        details = detailed_aspect_analysis(content, current_gid, metadata=metadata)
         update_analysis_results(rid, score, label, None, details)
     print("Analysis complete.")
