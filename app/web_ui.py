@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import sys
+import html
 
 # Add project root to path for Streamlit Cloud
 # Use insert(0) to ensure this path takes precedence
@@ -416,16 +417,22 @@ elif menu == "🦸 英雄专项":
                                     meta = p.get('metadata')
                                     tooltip = ""
                                     if meta:
-                                        tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
-                                    st.markdown(f"<div class='feedback-box feedback-pos' title='{tooltip}'>{p['text']}</div>", unsafe_allow_html=True)
+                                        full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
+                                        source = meta.get('source', '')
+                                        date = meta.get('date', '')
+                                        tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
+                                    st.markdown(f'<div class="feedback-box feedback-pos" title="{tooltip}">{html.escape(p["text"])}</div>', unsafe_allow_html=True)
                             with c2:
                                 st.write(f"😡 差评/建议 ({len(neg)})")
                                 for n in neg:
                                     meta = n.get('metadata')
                                     tooltip = ""
                                     if meta:
-                                        tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
-                                    st.markdown(f"<div class='feedback-box feedback-neg' title='{tooltip}'>{n['text']}</div>", unsafe_allow_html=True)
+                                        full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
+                                        source = meta.get('source', '')
+                                        date = meta.get('date', '')
+                                        tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
+                                    st.markdown(f'<div class="feedback-box feedback-neg" title="{tooltip}">{html.escape(n["text"])}</div>', unsafe_allow_html=True)
                     
                     render_feedback("General", tabs[0])
                     render_feedback("Skill", tabs[1])
@@ -467,9 +474,12 @@ elif menu == "⚙️ 玩法反馈":
                              meta = x.get('metadata')
                              tooltip = ""
                              if meta:
-                                 tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
+                                 full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
+                                 source = meta.get('source', '')
+                                 date = meta.get('date', '')
+                                 tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
-                             st.markdown(f"<div class='feedback-box feedback-pos' title='{tooltip}'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
+                             st.markdown(f'<div class="feedback-box feedback-pos" title="{tooltip}">{tag_html}{html.escape(x["text"])}</div>', unsafe_allow_html=True)
                     with c2:
                         st.subheader(f"负面/问题 ({len(neg)})")
                         neg_sorted = sorted(neg, key=lambda x: len(x['text']), reverse=True)
@@ -477,9 +487,12 @@ elif menu == "⚙️ 玩法反馈":
                              meta = x.get('metadata')
                              tooltip = ""
                              if meta:
-                                 tooltip = f"完整评论: {meta.get('full_content', '')}\n来源: {meta.get('source', '')}\n时间: {meta.get('date', '')}"
+                                 full_c = meta.get('full_content', '').replace("'", '’').replace('"', '”')
+                                 source = meta.get('source', '')
+                                 date = meta.get('date', '')
+                                 tooltip = html.escape(f"完整评论: {full_c}\n来源: {source}\n时间: {date}")
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
-                             st.markdown(f"<div class='feedback-box feedback-neg' title='{tooltip}'>{tag_html}{x['text']}</div>", unsafe_allow_html=True)
+                             st.markdown(f'<div class="feedback-box feedback-neg" title="{tooltip}">{tag_html}{html.escape(x["text"])}</div>', unsafe_allow_html=True)
 
 elif menu == "🔎 评论探索":
     st.title("🔎 评论探索")
