@@ -132,48 +132,87 @@ def scrape_discord(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
         
         # --- LOGIN / STATE DETECTION ---
         print("  [discord] 正在检查登录状态...")
-        time.sleep(10)
         
-        if page.locator("input[name='email']").is_visible():
-            login_discord(page)
-            print("  [discord] --- 请在浏览器中完成验证 (CAPTCHA/2FA) ---")
-            try:
-                # Wait for main content or forum indicators
-                page.wait_for_selector("[role='main'], [aria-label*='New Post']", timeout=300000) 
-                print("  [discord] 登录验证成功。")
-            except:
-                print("  [discord] 等待超时，尝试继续抓取...")
-
-        # --- FORUM MODE ACTIVATION ---
-        # Look specifically for forum elements in the main area
-        main_area = page.locator("[role='main']")
-        
-        # Give forum cards more time to appear
-        print("  [discord] 正在定位‘游戏建议’论坛贴子...")
+        # Wait a bit or check if login form appears (Discord can be slow)
         try:
-            main_area.locator("div[class*='mainCard']").first.wait_for(timeout=20000)
+            page.wait_for_selector("input[name='email']", timeout=10000)
         except:
             pass
 
-        is_forum = main_area.locator("div[class*='mainCard']").count() > 0 or \
-                   main_area.locator("[aria-label*='New Post']").count() > 0 or \
-                   "threads" in page.url # Forum URL signature
+        if page.locator("input[name='email']").is_visible():
+            login_discord(page)
+            print("  [discord] 登录指令已发送，正在进入频道...")
+            try:
+                # Give it time to transition from login to main content
+                page.wait_for_selector("[role='main'], [aria-label*='New Post']", timeout=45000) 
+            except:
+                pass
+            time.sleep(5) # Short buffer for dynamic elements to settle
+
+        # --- FORUM MODE ACTIVATION ---
+        print("  [discord] 正在定位论坛贴子列表 (最多等待 30s)...")
+        
+        main_area = page.locator("[role='main']")
+        is_forum = False
+        
+        # Retry loop for detection (Discord forum is slow to render)
+        for attempt in range(6):
+            selectors_to_check = [
+                "div[class*='mainCard']", 
+                "[aria-label*='New Post']", 
+                "[aria-label*='新贴子']",
+                "[aria-label*='新貼文']", # Traditional Chinese
+                "[aria-label*='貼子']",   # Traditional Chinese
+                "[aria-label*='帖子']",   
+                "[class*='container-'] [class*='card-']",
+                "[class*='form-'] [class*='searchInput-']", 
+                "[role='list'][aria-label*='贴子']",
+                "[role='list'][aria-label*='Post']",
+                "[role='list'][aria-label*='貼子']"
+            ]
+            
+            for selector in selectors_to_check:
+                if main_area.locator(selector).count() > 0:
+                    is_forum = True
+                    print(f"  [discord] 成功匹配到论坛元素: {selector}")
+                    break
+            
+            if is_forum or "threads" in page.url:
+                is_forum = True
+                break
+                
+            print(f"  [discord] 暂未发现论坛特征，等待中... ({attempt+1}/6)")
+            time.sleep(5)
+        
+        # Final desperate check: if we see message-like items but no forum cards, it might be a normal channel
+        # But for 'Game Suggestions' it SHOULD be a forum.
         
         total_saved = 0
         with open(BACKUP_FILE, "a", encoding="utf-8") as f_backup:
             if is_forum:
                 print("  [discord] 确认进入论坛视图，正在加载贴子列表...")
+                # Ensure we have cards before scrolling
+                try:
+                    main_area.locator("div[class*='mainCard'], [class*='card-']").first.wait_for(timeout=15000)
+                except: pass
+
                 # Scroll to load history
-                for _ in range(5):
-                    page.mouse.wheel(0, 3000)
-                    time.sleep(1.5)
+                for _ in range(10):
+                    page.mouse.wheel(0, 5000)
+                    time.sleep(2)
                 
-                post_cards = main_area.locator('div[class*="mainCard"]').all()
+                # Check for cards again using multiple possible classes
+                post_cards = main_area.locator('div[class*="mainCard"], [class*="card-"]').all()
+                if not post_cards:
+                    print("  [discord] ❌ 未找到任何建议贴子（可能是权限不足或页面未加载）。")
+                    return
+
                 print(f"  [discord] 找到 {len(post_cards)} 个建议贴。")
                 
                 for i in range(len(post_cards)):
-                    if i >= 150: break # Large limit for full history
+                    if i >= 150: break # Safety limit
                     try:
+                        # Re-locate cards as DOM might update
                         current_cards = main_area.locator('div[class*="mainCard"]').all()
                         if i >= len(current_cards): break
                         card = current_cards[i]
@@ -182,8 +221,8 @@ def scrape_discord(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
                         title_el = card.locator("h3").first
                         title = title_el.inner_text().strip() if title_el.count() else f"贴子 {i}"
                         
-                        # Safety: Skip categories if they somehow match
-                        if title in ["官方消息", "聊天空間", "建議空間", "組隊空間"]:
+                        # Safety: Skip categories/system channels
+                        if title in ["官方消息", "聊天空間", "建議空間", "組隊空間", "General", "Lobby"]:
                             continue
 
                         print(f"  [discord] ({i+1}/{len(current_cards)}) 正在进入原贴: {title}")
@@ -191,7 +230,7 @@ def scrape_discord(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
                         # Click into thread
                         card.scroll_into_view_if_needed()
                         card.click(force=True)
-                        time.sleep(5) 
+                        time.sleep(5) # Wait for thread content
                         
                         # Scrape Messages
                         saved = scrape_messages_in_current_view(page, game_key, guild_id, channel_id, cutoff_date, f_backup, source, url, topic_title=title)
@@ -199,7 +238,7 @@ def scrape_discord(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
                             print(f"  [discord]     ✅ 已抓取 {saved} 条回复。")
                         total_saved += saved
                         
-                        # Close Thread
+                        # Close Thread to return to list
                         page.keyboard.press("Escape")
                         time.sleep(1.5)
                         close_btn = page.locator("[aria-label='Close'], [aria-label='关闭']").first
@@ -207,12 +246,11 @@ def scrape_discord(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
                             close_btn.click()
                             time.sleep(1)
                             
-                    except Exception as post_e:
-                        # print(f"  [discord] 贴子处理异常: {post_e}")
+                    except Exception:
                         pass
             else:
-                print("  [discord] ⚠️ 未探测到论坛结构，尝试普通抓取模式...")
-                total_saved = scrape_messages_in_current_view(page, game_key, guild_id, channel_id, cutoff_date, f_backup, source, url, topic_title="General")
+                print("  [discord] ❌ 错误：当前地址不是有效的论坛频道。Discord 爬虫仅支持‘游戏建议’类的论坛视图。")
+                return
                     
         print(f"  [discord] 完成。共计保存 {total_saved} 条‘游戏建议’相关数据。")
 
