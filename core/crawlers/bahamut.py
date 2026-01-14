@@ -5,6 +5,7 @@ import random
 import json
 import os
 from .base import save_review_helper, parse_date
+from config.settings import BAHAMUT_USER, BAHAMUT_PASS
 
 # Unified Backup naming
 BACKUP_FILE = "data/bahamut_backup.jsonl"
@@ -15,8 +16,8 @@ def login_bahamut(page: Page):
         page.goto("https://user.gamer.com.tw/login.php")
         
         print("  [bahamut] --- MANUAL LOGIN REQUIRED ---")
-        print("  [bahamut] 1. Solve Cloudflare Captcha.")
-        print("  [bahamut] 2. Login with bahauser1y9 / mt1y9999.")
+        print(f"  [bahamut] 1. Solve Cloudflare Captcha.")
+        print(f"  [bahamut] 2. Login with {BAHAMUT_USER} / {'*' * len(BAHAMUT_PASS)}.")
         
         # Wait Loop for Login Success
         max_wait = 300 
@@ -32,11 +33,36 @@ def login_bahamut(page: Page):
                 print(f"  [bahamut] Detected login success!")
                 break
             
-            # Autofill helper
+            # Pure Manual Login Hint
             try:
-                if page.locator("input[name='userid']").is_visible() and page.locator("input[name='userid']").input_value() == "":
-                    page.fill("input[name='userid']", "bahauser1y9")
-                    page.fill("input[name='password']", "mt1y9999")
+                # Inject a visual hint for the user
+                page.evaluate(f"""() => {{
+                    if (document.getElementById('crawler-hint')) return;
+                    const div = document.createElement('div');
+                    div.id = 'crawler-hint';
+                    div.style.position = 'fixed';
+                    div.style.top = '10px';
+                    div.style.left = '50%';
+                    div.style.transform = 'translateX(-50%)';
+                    div.style.backgroundColor = '#ff4757';
+                    div.style.color = 'white';
+                    div.style.padding = '15px 25px';
+                    div.style.borderRadius = '12px';
+                    div.style.zIndex = '9999999'; // Higher z-index
+                    div.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+                    div.style.fontSize = '18px';
+                    div.style.fontWeight = 'bold';
+                    div.style.border = '3px solid white';
+                    div.style.textAlign = 'center';
+                    div.innerHTML = `
+                        <div style="margin-bottom:8px; font-size:20px; text-decoration:underline;">⚠️ 爬虫正等待登录 ⚠️</div>
+                        <div style="margin:10px 0;">账号: <span style="font-family:monospace; background:#000; padding:2px 8px; border-radius:4px;">{BAHAMUT_USER}</span></div>
+                        <div style="margin:10px 0;">密码: <span style="font-family:monospace; background:#000; padding:2px 8px; border-radius:4px;">{BAHAMUT_PASS}</span></div>
+                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.3); margin:10px 0;"/>
+                        <div style="font-size:14px; font-weight:normal;">请手动填入上方信息，解决验证码并点击登录。<br/>登录成功后此窗口将消失。</div>
+                    `;
+                    document.body.appendChild(div);
+                }}""")
             except: pass
             time.sleep(2)
     except Exception as e:

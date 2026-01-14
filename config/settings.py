@@ -1,5 +1,9 @@
 import os
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 GAMES = {
     "jump_assemble": {
@@ -10,7 +14,8 @@ GAMES = {
             "https://www.taptap.io/tw/app/33659119/review?sort=recent",
             "https://www.youtube.com/@jumpassembletc/videos",
             "https://m-apps.qoo-app.com/app-comment/31187?lang=current&sort=newest",
-            "https://forum.gamer.com.tw/B.php?bsn=78752"    # Bahamut Forum
+            "https://forum.gamer.com.tw/B.php?bsn=78752",    # Bahamut Forum
+            "https://discord.com/channels/1418135682026704918/1443083478202847232" # Discord
         ],
         "keywords": {
             "孙悟空": "Goku", "悟空": "Goku", "贝吉塔": "Vegeta", "路飞": "Luffy", "索隆": "Zoro",
@@ -19,6 +24,12 @@ GAMES = {
         }
     }
 }
+
+# --- Credentials ---
+BAHAMUT_USER = os.getenv("BAHAMUT_USER", "guest")
+BAHAMUT_PASS = os.getenv("BAHAMUT_PASS", "")
+DISCORD_USER = os.getenv("DISCORD_USER", "")
+DISCORD_PASS = os.getenv("DISCORD_PASS", "")
 
 # --- Dynamic Config Loading ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
