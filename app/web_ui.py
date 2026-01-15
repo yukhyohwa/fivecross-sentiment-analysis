@@ -424,8 +424,17 @@ elif menu == "🦸 英雄专项":
                                 st.caption("暂无相关反馈")
                                 return
                             
-                            pos = [i for i in items if i['label'] == 'Positive']
-                            neg = [i for i in items if i['label'] == 'Negative']
+                            # Deduplicate display
+                            seen = set()
+                            unique_items = []
+                            for item in items:
+                                txt_norm = item['text'].strip()
+                                if txt_norm not in seen:
+                                    seen.add(txt_norm)
+                                    unique_items.append(item)
+                            
+                            pos = [i for i in unique_items if i['label'] == 'Positive']
+                            neg = [i for i in unique_items if i['label'] == 'Negative']
                             
                             c1, c2 = st.columns(2)
                             with c1:
@@ -440,6 +449,7 @@ elif menu == "🦸 英雄专项":
                                     meta = n.get('metadata')
                                     tooltip = format_tooltip(meta)
                                     st.markdown(f'<div class="feedback-box feedback-neg" title="{tooltip}">{html.escape(n["text"])}</div>', unsafe_allow_html=True)
+
                     
                     render_feedback("General", tabs[0])
                     render_feedback("Skill", tabs[1])
@@ -470,14 +480,24 @@ elif menu == "⚙️ 玩法反馈":
             for i, aspect in enumerate(sorted(sys_data.keys())):
                 with tabs[i]:
                     items = sys_data[aspect]
-                    pos = [x for x in items if x['label'] == 'Positive']
-                    neg = [x for x in items if x['label'] == 'Negative']
+                    
+                    # Deduplicate display
+                    seen = set()
+                    unique_items = []
+                    for item in items:
+                        txt_norm = item['text'].strip()
+                        if txt_norm not in seen:
+                            seen.add(txt_norm)
+                            unique_items.append(item)
+
+                    pos = [x for x in unique_items if x['label'] == 'Positive']
+                    neg = [x for x in unique_items if x['label'] == 'Negative']
                     c1, c2 = st.columns(2)
                     with c1:
                         st.subheader(f"正面 ({len(pos)})")
                         # Show more items and sort by length to prioritize descriptive reviews
                         pos_sorted = sorted(pos, key=lambda x: len(x['text']), reverse=True)
-                        for x in pos_sorted[:100]:
+                        for x in pos_sorted[:150]:
                              meta = x.get('metadata')
                              tooltip = format_tooltip(meta)
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
@@ -485,11 +505,12 @@ elif menu == "⚙️ 玩法反馈":
                     with c2:
                         st.subheader(f"负面/问题 ({len(neg)})")
                         neg_sorted = sorted(neg, key=lambda x: len(x['text']), reverse=True)
-                        for x in neg_sorted[:100]:
+                        for x in neg_sorted[:150]:
                              meta = x.get('metadata')
                              tooltip = format_tooltip(meta)
                              tag_html = "".join([f"<span class='mode-tag'>{tag}</span>" for tag in x.get('tags', [])])
                              st.markdown(f'<div class="feedback-box feedback-neg" title="{tooltip}">{tag_html}{html.escape(x["text"])}</div>', unsafe_allow_html=True)
+
 
 elif menu == "🔎 评论探索":
     st.title("🔎 评论探索")
