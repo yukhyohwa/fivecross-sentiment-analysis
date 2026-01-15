@@ -55,12 +55,17 @@ def analyze_sentiment(text):
 
     # 2. Apply rule-based bias for game-specific sentiment (More sensitive)
     pos_words = ["好", "赞", "贊", "强", "強", "不错", "不錯", "神", "神作", "优秀", "还原", "流畅", "良心", "爽", "喜欢", "期待", "好用", "还原度"]
-    neg_words = ["烂", "爛", "差", "负面", "失望", "废", "难", "坑", "垃圾", "卡", "慢", "贵", "恶心", "辣鸡", "丑", "弱", "削", "砍", "不听话"]
+    neg_words = ["烂", "爛", "差", "负面", "失望", "废", "难", "坑", "垃圾", "卡", "慢", "贵", "恶心", "辣鸡", "丑", "弱", "削", "砍", "不听话", "贵得要死", "贵死", "吃相难看", "离谱", "滚", "没诚意", "割韭菜"]
+    
+    # Strong negatives that should heavily weight the score
+    strong_negatives = ["贵得要死", "太贵", "吃相难看", "垃圾", "烂", "烂作", "割韭菜"]
     
     for w in pos_words:
         if w in text: score += 0.1
     for w in neg_words:
         if w in text: score -= 0.1
+    for w in strong_negatives:
+        if w in text: score -= 0.2 # Additional penalty
     
     # 3. Handle English Rule-based if no Chinese
     if not re.search(r'[\u4e00-\u9fa5]', text):

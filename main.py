@@ -12,8 +12,9 @@ from core.crawler import run_crawler
 
 def run_web_ui():
     print("Starting Web UI...")
-    # Use streamlit run 
-    app_path = os.path.join("app", "web_ui.py")
+    # Use absolute path so it works from any directory
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    app_path = os.path.join(base_dir, "app", "web_ui.py")
     subprocess.run([sys.executable, "-m", "streamlit", "run", app_path])
 
 def start_interactive_menu():
