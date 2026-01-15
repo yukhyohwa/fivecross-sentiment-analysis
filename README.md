@@ -37,7 +37,15 @@ A professional public sentiment monitoring and sentiment analysis system specifi
    pip install -r requirements.txt
    playwright install chromium
    ```
-2. **Launch Web Dashboard**:
+3. **Security Configuration**:
+
+   Create a `.streamlit/secrets.toml` file based on the example:
+   ```bash
+   cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+   ```
+   Edit the file to set your admin username and passwords.
+
+4. **Launch Web Dashboard**:
 
    ```bash
    python main.py web
