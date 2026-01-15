@@ -351,52 +351,126 @@ if menu == "📊 总览大屏":
             
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-        # 2. Google Trends / Market Heat
+        # 1.5 热点演进路线 (Topic Evolution)
         st.markdown("---")
-        st.subheader("🌍 市场热度趋势 (Google Trends)")
+        st.subheader("📈 核心话题演进趋势")
         
-        TRENDS_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'market_trends.db')
-        if os.path.exists(TRENDS_DB):
-            try:
-                t_conn = sqlite3.connect(TRENDS_DB)
-                t_df = pd.read_sql_query("SELECT * FROM google_trends", t_conn)
-                t_conn.close()
+        if not df.empty and 'detailed_analysis' in df.columns:
+            # 准备数据：提取日期和系统维度
+            topic_trend_data = []
+            for _, row in df.iterrows():
+                if pd.isna(row['detailed_analysis']): continue
+                try:
+                    analysis = json.loads(row['detailed_analysis'])
+                    # Aggregate by day
+                    date = pd.to_datetime(row['review_date']).normalize()
+                    
+                    # 统计系统维度 (Optimization, Network, Matchmaking, Welfare)
+                    system_aspects = analysis.get("System", {})
+                    for aspect, items in system_aspects.items():
+                        if items: # 该评论提到了这个维度
+                            topic_trend_data.append({"date": date, "topic": aspect, "count": 1})
+                except:
+                    continue
+            
+            if topic_trend_data:
+                trend_df = pd.DataFrame(topic_trend_data)
+                # 按天和话题分组统计
+                trend_pivot = trend_df.groupby(['date', 'topic']).size().reset_index(name='mentions')
                 
-                if not t_df.empty:
-                    t_df['date'] = pd.to_datetime(t_df['date'])
-                    
-                    # Filter for last 3 months (90 days)
-                    three_months_ago = pd.Timestamp.now() - pd.Timedelta(days=90)
-                    t_df = t_df[t_df['date'] >= three_months_ago]
-                    
-                    # Region Mapping for better display
-                    region_map = {
-                        'TW': '台湾', 'HK': '香港', 
-                        'US': '美国', 
-                        'TH': '泰国', 'JP': '日本'
-                    }
+                # 绘制折线图
+                fig_topic = px.line(trend_pivot, x='date', y='mentions', color='topic',
+                                    title="系统玩法话题热度趋势 (按提及次数)",
+                                    labels={'date': '日期', 'mentions': '提及次数', 'topic': '话题维度'},
+                                    line_shape='linear', markers=True)
+                
+                # 优化外观
+                fig_topic.update_layout(
+                    hovermode="x unified", 
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                    xaxis=dict(title=None),
+                    yaxis=dict(title="提及频次")
+                )
+                st.plotly_chart(fig_topic, use_container_width=True)
+            else:
+                st.info("💡 暂无话题提取数据。请确保已在爬虫管理中执行‘深度分析’。")
 
-                    t_df['region_name'] = t_df['region'].map(region_map)
+        # 1.6 关键词飙升榜 (Anomaly Detection)
+        st.markdown("---")
+        st.subheader("🚀 热词飙升榜 (Anomaly Detection)")
+        st.caption("对比过去 7 天与更早 21 天，挖掘讨论热度增长最快的关键词")
+
+        if not df.empty and 'content' in df.columns:
+            from collections import Counter
+            
+            # 1. Split data into Recent vs Baseline
+            # Use the latest date in the filtered dataframe as the reference point
+            latest_date = df['review_date'].max().normalize()
+            recent_cutoff = latest_date - pd.Timedelta(days=7)
+            baseline_cutoff = latest_date - pd.Timedelta(days=28)
+            
+            df_recent = df[df['review_date'] >= recent_cutoff]
+            df_baseline = df[(df['review_date'] < recent_cutoff) & (df['review_date'] >= baseline_cutoff)]
+            
+            if len(df_recent) > 5 and len(df_baseline) > 5:
+                stopwords = load_stopwords()
+                
+                def get_word_freq(dataframe):
+                    all_words = []
+                    for txt in dataframe['content'].dropna():
+                        # Filter: only Chinese/English words, length > 1
+                        words = [w for w in jieba.cut(str(txt)) if len(w) > 1 and w not in stopwords and not re.match(r'^[0-9.]+$', w)]
+                        all_words.extend(words)
+                    counts = Counter(all_words)
+                    total = sum(counts.values())
+                    return counts, total
+
+                counts_r, total_r = get_word_freq(df_recent)
+                counts_b, total_b = get_word_freq(df_baseline)
+                
+                # 2. Calculate Growth Score
+                # Score = (Recent_Freq + epsilon) / (Baseline_Freq + epsilon)
+                rising_data = []
+                for word, c_r in counts_r.items():
+                    if c_r < 3: continue # Filter noise: word must appear at least 3 times recently
                     
-                    # Filtering options for Trends
-                    c1, c2 = st.columns([1, 3])
+                    freq_r = c_r / total_r
+                    c_b = counts_b.get(word, 0)
+                    freq_b = c_b / total_b if total_b > 0 else 0
+                    
+                    # Growth logic: Simple multiple of frequency
+                    # Use a small floor for baseline freq to avoid division by zero and over-weighting brand new words
+                    floor_freq = 0.5 / total_b if total_b > 0 else 0.0001
+                    growth = freq_r / max(freq_b, floor_freq)
+                    
+                    rising_data.append({
+                        "关键词": word, 
+                        "最近提及": c_r, 
+                        "基准提及": c_b, 
+                        "增长倍率": round(growth, 1)
+                    })
+                
+                if rising_data:
+                    rising_df = pd.DataFrame(rising_data).sort_values("增长倍率", ascending=False).head(10)
+                    
+                    c1, c2 = st.columns([2, 1])
                     with c1:
-                        selected_kw = st.selectbox("选择热度词", t_df['keyword'].unique())
-                    
-                    plot_df = t_df[t_df['keyword'] == selected_kw]
-                    
-                    fig_trend = px.line(plot_df, x='date', y='interest_score', color='region_name',
-                                       title=f"'{selected_kw}' 近期搜索热度 (100为峰值)",
-                                       labels={'interest_score': '搜索热度', 'date': '日期', 'region_name': '地区'})
-                    st.plotly_chart(fig_trend, use_container_width=True)
+                        fig_rising = px.bar(rising_df, x="增长倍率", y="关键词", orientation='h', 
+                                           color="增长倍率", color_continuous_scale="Reds",
+                                           title="Top 10 飙升关键词",
+                                           text="最近提及")
+                        fig_rising.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False)
+                        st.plotly_chart(fig_rising, use_container_width=True)
+                    with c2:
+                        st.write("📊 详情数据")
+                        st.dataframe(rising_df[["关键词", "增长倍率", "最近提及"]], hide_index=True)
                 else:
-                    st.info("📊 市场趋势数据库暂无数据，请运行 google_trends.py 抓取。")
-            except Exception as trend_e:
-                st.error(f"趋势数据加载失败: {trend_e}")
-        else:
-            st.info("💡 尚未创建市场趋势数据库。")
+                    st.info("尚未发现明显的词频异动。")
+            else:
+                st.info("数据量不足（需要至少 7 天以上的历史数据进行对比）。")
 
-        # 2. Word Cloud (Section Moved Down)
+
+        # 2. Word Cloud
         st.markdown("---")
         st.subheader("☁️ 评论词云 (Word Cloud)")
 
@@ -444,6 +518,51 @@ if menu == "📊 总览大屏":
              ax.imshow(wc, interpolation='bilinear')
              ax.axis("off")
              st.pyplot(fig_wc)
+
+        # 3. Google Trends / Market Heat
+        st.markdown("---")
+        st.subheader("🌍 市场热度趋势 (Google Trends)")
+        
+        TRENDS_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'market_trends.db')
+        if os.path.exists(TRENDS_DB):
+            try:
+                t_conn = sqlite3.connect(TRENDS_DB)
+                t_df = pd.read_sql_query("SELECT * FROM google_trends", t_conn)
+                t_conn.close()
+                
+                if not t_df.empty:
+                    t_df['date'] = pd.to_datetime(t_df['date'])
+                    
+                    # Filter for last 3 months (90 days)
+                    three_months_ago = pd.Timestamp.now() - pd.Timedelta(days=90)
+                    t_df = t_df[t_df['date'] >= three_months_ago]
+                    
+                    # Region Mapping for better display
+                    region_map = {
+                        'TW': '台湾', 'HK': '香港', 
+                        'US': '美国', 
+                        'TH': '泰国', 'JP': '日本'
+                    }
+
+                    t_df['region_name'] = t_df['region'].map(region_map)
+                    
+                    # Filtering options for Trends
+                    c1, c2 = st.columns([1, 3])
+                    with c1:
+                        selected_kw = st.selectbox("选择热度词", t_df['keyword'].unique())
+                    
+                    plot_df = t_df[t_df['keyword'] == selected_kw]
+                    
+                    fig_trend = px.line(plot_df, x='date', y='interest_score', color='region_name',
+                                       title=f"'{selected_kw}' 近期搜索热度 (100为峰值)",
+                                       labels={'interest_score': '搜索热度', 'date': '日期', 'region_name': '地区'})
+                    st.plotly_chart(fig_trend, use_container_width=True)
+                else:
+                    st.info("📊 市场趋势数据库暂无数据，请运行 google_trends.py 抓取。")
+            except Exception as trend_e:
+                st.error(f"趋势数据加载失败: {trend_e}")
+        else:
+            st.info("💡 尚未创建市场趋势数据库。")
 
 elif menu == "🦸 英雄专项":
 
