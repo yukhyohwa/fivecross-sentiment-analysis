@@ -23,6 +23,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import jieba
 import re
+import sqlite3
 
 
 def load_stopwords():
@@ -248,9 +249,51 @@ if menu == "📊 总览大屏":
                 fig = px.bar(rc, x='Star', y='Count', color='Count')
                 st.plotly_chart(fig, use_container_width=True)
 
-        # Word Cloud
+        # 1. NEW: Google Trends / Market Heat (Moved up)
+        st.markdown("---")
+        st.subheader("🌍 市场热度趋势 (Google Trends)")
+        
+        TRENDS_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'market_trends.db')
+        if os.path.exists(TRENDS_DB):
+            try:
+                t_conn = sqlite3.connect(TRENDS_DB)
+                t_df = pd.read_sql_query("SELECT * FROM google_trends", t_conn)
+                t_conn.close()
+                
+                if not t_df.empty:
+                    t_df['date'] = pd.to_datetime(t_df['date'])
+                    
+                    # Region Mapping for better display
+                    region_map = {
+                        'TW': '台湾', 'HK': '香港', 
+                        'BR': '巴西', 'US': '美国', 
+                        'TH': '泰国', 'JP': '日本'
+                    }
+
+                    t_df['region_name'] = t_df['region'].map(region_map)
+                    
+                    # Filtering options for Trends
+                    c1, c2 = st.columns([1, 3])
+                    with c1:
+                        selected_kw = st.selectbox("选择热度词", t_df['keyword'].unique())
+                    
+                    plot_df = t_df[t_df['keyword'] == selected_kw]
+                    
+                    fig_trend = px.line(plot_df, x='date', y='interest_score', color='region_name',
+                                       title=f"'{selected_kw}' 近期搜索热度 (100为峰值)",
+                                       labels={'interest_score': '搜索热度', 'date': '日期', 'region_name': '地区'})
+                    st.plotly_chart(fig_trend, use_container_width=True)
+                else:
+                    st.info("📊 市场趋势数据库暂无数据，请运行 google_trends.py 抓取。")
+            except Exception as trend_e:
+                st.error(f"趋势数据加载失败: {trend_e}")
+        else:
+            st.info("💡 尚未创建市场趋势数据库。")
+
+        # 2. Word Cloud (Section Moved Down)
         st.markdown("---")
         st.subheader("☁️ 评论词云 (Word Cloud)")
+
         if 'content' in df.columns and not df['content'].dropna().empty:
              full_text = " ".join(df['content'].dropna().astype(str))
              # Chinese segmentation
@@ -292,46 +335,12 @@ if menu == "📊 总览大屏":
                  wc = WordCloud(width=1000, height=400, background_color='white', stopwords=load_stopwords()).generate(cut_text)
              
              fig_wc, ax = plt.subplots(figsize=(12, 5))
+             ax.imshow(wc, interpolation='bilinear')
              ax.axis("off")
              st.pyplot(fig_wc)
 
-        # NEW: Google Trends / Market Heat
-        st.markdown("---")
-        st.subheader("🌍 市场热度趋势 (Google Trends)")
-        
-        TRENDS_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'market_trends.db')
-        if os.path.exists(TRENDS_DB):
-            try:
-                t_conn = sqlite3.connect(TRENDS_DB)
-                t_df = pd.read_sql_query("SELECT * FROM google_trends", t_conn)
-                t_conn.close()
-                
-                if not t_df.empty:
-                    t_df['date'] = pd.to_datetime(t_df['date'])
-                    
-                    # Region Mapping for better display
-                    region_map = {'TW': '台湾', 'HK': '香港', 'MY': '马来西亚', 'VN': '越南'}
-                    t_df['region_name'] = t_df['region'].map(region_map)
-                    
-                    # Filtering options for Trends
-                    c1, c2 = st.columns([1, 3])
-                    with c1:
-                        selected_kw = st.selectbox("选择热度词", t_df['keyword'].unique())
-                    
-                    plot_df = t_df[t_df['keyword'] == selected_kw]
-                    
-                    fig_trend = px.line(plot_df, x='date', y='interest_score', color='region_name',
-                                       title=f"'{selected_kw}' 近期搜索热度 (100为峰值)",
-                                       labels={'interest_score': '搜索热度', 'date': '日期', 'region_name': '地区'})
-                    st.plotly_chart(fig_trend, use_container_width=True)
-                else:
-                    st.info("📊 市场趋势数据库暂无数据，请运行 google_trends.py 抓取。")
-            except Exception as trend_e:
-                st.error(f"趋势数据加载失败: {trend_e}")
-        else:
-            st.info("💡 尚未创建市场趋势数据库。")
-
 elif menu == "🦸 英雄专项":
+
     st.title("🦸 英雄专项反馈")
     
     if df.empty or 'detailed_analysis' not in df.columns:

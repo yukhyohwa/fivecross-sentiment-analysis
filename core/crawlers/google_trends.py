@@ -6,8 +6,10 @@ from pytrends.request import TrendReq
 import time
 
 # Use a separate database for market trends
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Correctly point to project root data/ (3 levels up from core/crawlers/..)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_NAME = os.path.join(BASE_DIR, 'data', 'market_trends.db')
+
 
 def init_trends_db():
     os.makedirs(os.path.dirname(DB_NAME), exist_ok=True)
@@ -72,6 +74,16 @@ def fetch_google_trends(keywords, regions=['TW', 'HK', 'MY', 'VN']):
 
 if __name__ == "__main__":
     init_trends_db()
-    # Key terms for the game
-    game_keywords = ["漫畫群星：大集結", "漫画群星：大集结", "Jump Assemble"]
-    fetch_google_trends(game_keywords)
+    
+    # Regional targeting: 
+    # TW/HK use Traditional Chinese
+    # BR/US/TH/JP use English "Jump: Assemble" as requested
+    configs = [
+        {"kw": ["漫畫群星：大集結"], "regions": ["TW", "HK"]},
+        {"kw": ["Jump: Assemble"], "regions": ["BR", "US", "TH", "JP"]}
+    ]
+    
+    for config in configs:
+        fetch_google_trends(config["kw"], regions=config["regions"])
+
+
