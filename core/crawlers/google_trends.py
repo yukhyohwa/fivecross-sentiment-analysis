@@ -80,7 +80,7 @@ if __name__ == "__main__":
     # BR/US/TH/JP use English "Jump: Assemble" as requested
     configs = [
         {"kw": ["漫畫群星：大集結"], "regions": ["TW", "HK"]},
-        {"kw": ["Jump: Assemble"], "regions": ["BR", "US", "TH", "JP"]}
+        {"kw": ["Jump: Assemble"], "regions": ["US", "TH", "JP"]}
     ]
     
     for config in configs:

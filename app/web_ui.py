@@ -194,8 +194,8 @@ with st.sidebar:
     # Date Filter
     st.subheader("📅 时间筛选")
     today = pd.Timestamp.now().date()
-    # Default to last 2 years (approx) or max available
-    start_date = st.date_input("开始日期", today - pd.Timedelta(days=730))
+    # Default to last 1 year
+    start_date = st.date_input("开始日期", today - pd.Timedelta(days=365))
     end_date = st.date_input("结束日期", today)
     
     # Source Filter
@@ -232,7 +232,7 @@ if menu == "📊 总览大屏":
         # Sentiment Chart
         c1, c2 = st.columns(2)
         with c1:
-            st.subheader("情感倾向")
+            st.subheader("😊 情感倾向")
             if 'sentiment_label' in df.columns:
                 counts = df['sentiment_label'].value_counts().reset_index()
                 counts.columns = ['Label', 'Count']
@@ -241,7 +241,7 @@ if menu == "📊 总览大屏":
                 st.plotly_chart(fig, use_container_width=True)
         
         with c2:
-            st.subheader("评分分布")
+            st.subheader("⭐ 评分分布")
             if 'rating' in df.columns:
                 rc = df['rating'].value_counts().sort_index().reset_index()
                 rc.columns = ['Star', 'Count']
@@ -249,7 +249,109 @@ if menu == "📊 总览大屏":
                 fig = px.bar(rc, x='Star', y='Count', color='Count')
                 st.plotly_chart(fig, use_container_width=True)
 
-        # 1. NEW: Google Trends / Market Heat (Moved up)
+        # 1. Activity Heatmap (Standard GitHub Contribution Graph)
+        st.markdown("---")
+        st.subheader("🗓️ 评论活跃度")
+        
+        if not df.empty and 'review_date' in df.columns:
+            import numpy as np
+            
+            # 1. Data Preparation
+            h_df = df.copy()
+            h_df['review_date'] = pd.to_datetime(h_df['review_date']).dt.normalize()
+            
+            # 2. Generate Full Range
+            all_dates = pd.date_range(start=start_date, end=end_date)
+            base_df = pd.DataFrame({'review_date': all_dates})
+            base_df['day_of_week'] = base_df['review_date'].dt.dayofweek # 0=Mon, 6=Sun
+            base_df['month_name'] = base_df['review_date'].dt.strftime('%b')
+            base_df['date_str'] = base_df['review_date'].dt.strftime('%b %d, %Y')
+            
+            # 3. Align to Weeks (Monday-based columns)
+            # Find the starting Monday for the entire grid
+            start_of_grid = all_dates.min() - pd.Timedelta(days=all_dates.min().dayofweek)
+            base_df['week_num'] = (base_df['review_date'] - start_of_grid).dt.days // 7
+            
+            # 4. Aggregate Actual Data
+            agg = h_df.groupby('review_date').size().reset_index(name='count')
+            merged = pd.merge(base_df, agg, on='review_date', how='left').fillna(0)
+            
+            # 5. Pivot for Layout
+            # Rows: Weekday (0-6), Columns: Week Index
+            pivot_z = merged.pivot(index='day_of_week', columns='week_num', values='count').fillna(0)
+            pivot_date = merged.pivot(index='day_of_week', columns='week_num', values='date_str')
+            
+            unique_weeks = sorted(merged['week_num'].unique())
+            
+            # 6. Prepare X-axis Month Labels
+            x_labels = []
+            last_m = ""
+            for wn in unique_weeks:
+                # Get the month of the first day of this week
+                m = merged[merged['week_num'] == wn]['month_name'].iloc[0]
+                if m != last_m:
+                    x_labels.append(m)
+                    last_m = m
+                else:
+                    x_labels.append("")
+
+            # 7. Custom Hover Text
+            custom_hover = []
+            for r in range(7):
+                row_hover = []
+                for c in range(len(unique_weeks)):
+                    d_str = pivot_date.iloc[r, c] if c < pivot_date.shape[1] else ""
+                    cnt = int(pivot_z.iloc[r, c]) if c < pivot_z.shape[1] else 0
+                    if d_str:
+                        row_hover.append(f"{d_str}<br>{cnt} reviews")
+                    else:
+                        row_hover.append("")
+                custom_hover.append(row_hover)
+
+            # 8. Render using go.Heatmap for precise control
+            colorscale = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"] # GitHub Greens
+            
+            fig = go.Figure(data=go.Heatmap(
+                z=pivot_z.values,
+                x=list(range(len(unique_weeks))),
+                y=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                colorscale=colorscale,
+                showscale=False,
+                xgap=3,
+                ygap=3,
+                hoverinfo="text",
+                text=custom_hover
+            ))
+            
+            fig.update_layout(
+                height=220,
+                margin=dict(t=40, b=20, l=40, r=20),
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(
+                    tickmode='array',
+                    tickvals=list(range(len(unique_weeks))),
+                    ticktext=x_labels,
+                    side='top',
+                    showgrid=False,
+                    zeroline=False,
+                    fixedrange=True
+                ),
+                yaxis=dict(
+                    autorange="reversed",
+                    tickmode='array',
+                    tickvals=[1, 3, 5],
+                    ticktext=["Mon", "Wed", "Fri"],
+                    showgrid=False,
+                    zeroline=False,
+                    fixedrange=True
+                )
+            )
+            # Ensure square cells
+            fig.update_yaxes(scaleanchor="x", scaleratio=1)
+            
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+        # 2. Google Trends / Market Heat
         st.markdown("---")
         st.subheader("🌍 市场热度趋势 (Google Trends)")
         
@@ -263,10 +365,14 @@ if menu == "📊 总览大屏":
                 if not t_df.empty:
                     t_df['date'] = pd.to_datetime(t_df['date'])
                     
+                    # Filter for last 3 months (90 days)
+                    three_months_ago = pd.Timestamp.now() - pd.Timedelta(days=90)
+                    t_df = t_df[t_df['date'] >= three_months_ago]
+                    
                     # Region Mapping for better display
                     region_map = {
                         'TW': '台湾', 'HK': '香港', 
-                        'BR': '巴西', 'US': '美国', 
+                        'US': '美国', 
                         'TH': '泰国', 'JP': '日本'
                     }
 
