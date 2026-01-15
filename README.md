@@ -10,21 +10,21 @@ A professional public sentiment monitoring and sentiment analysis system specifi
 ## ✨ Core Features
 
 - **Multi-Platform Data Aggregation**:
+  - **Discord Forum (Enterprise Support)**: Advanced **3-Region logic** (Sidebar -> Forum List -> Thread Details) with automatic infinite scrolling and reply extraction.
   - **TapTap (CN & Global)**: Full support for international "Post Card" data structures.
   - **YouTube**: Incremental scraping of video comments with precise source identification.
   - **QooApp**: Advanced infinite-scroll simulation for comprehensive review extraction.
   - **Bahamut Forum (Traditional Chinese)**: Specialized logic for the TW/HK community with anti-bot bypass support.
 - **Advanced NLP Engine**:
   - **Hybrid Sentiment Analysis**: Integrates `SnowNLP` for granular score calculation (0.0 - 1.0) and domain-specific keyword weighting.
-  - **Multi-Lingual Hero Database**: Supports massive alias mapping for Simplified Chinese, Traditional Chinese, and English (e.g., Goku / 孫悟空 / 悟空).
+  - **Multi-Lingual Hero Database**: Supports massive alias mapping for Simplified Chinese, Traditional Chinese, and English.
   - **Multi-Entity Attribution**: Correctly handles clauses mentioning multiple heroes or system aspects in a single comment.
 - **Hero & Gameplay Insights**:
-  - **Hero Monitoring**: Track feedback for every hero across dimensions like Skills, Strength, and Visuals.
-  - **Gameplay Mode Tagging**: Automatically recognizes specific modes such as **Summit War, Scroll Scramble, Mugen Train, Jujutsu High, Martial Arts Tournament, Duo/Solo Brawl**.
-  - **System Dimensions**: Summarizes technical feedback into **Optimization, Network, Matchmaking, and Welfare**.
+  - **Expanded Hero Roster**: Real-time tracking for new releases like **Nobara Kugisaki (釘崎野薔薇)**, **Coyote Starrk (史塔克)**, **Minato (波風湊)**, **Luffy**, and **Sakura**.
+  - **Gameplay Mode Tagging**: Automatically recognizes specific modes such as **Summit War (頂上戰爭), Mugen Train (無限列車)**, Scroll Scramble, Jujutsu High, and more.
+  - **System Dimensions**: Summarizes technical feedback into Optimization, Network, Matchmaking, and Welfare.
 - **Interactive Visualization**:
-  - Dedicated hero feedback tabs.
-  - Gameplay specific trend analysis.
+  - Dedicated hero feedback tabs and gameplay specific trend analysis.
   - Sentiment distribution and dynamic word clouds.
 
 ## 🚀 Getting Started
@@ -43,8 +43,11 @@ A professional public sentiment monitoring and sentiment analysis system specifi
 3. **Run Data Crawler**:
 
    ```bash
-   # Crawl data from the last 7 days
-   python main.py crawl --days 7
+   # Crawl all platforms for the last 30 days
+   python main.py crawl --days 30
+
+   # Target a specific platform (e.g., Discord)
+   python main.py crawl --source discord
    ```
 4. **Execute Deep Analysis**:
 
@@ -63,19 +66,20 @@ fivecross-sentiment-analysis/
 │   ├── settings.py        # Global settings and crawler targets
 │   └── heroes.json        # Dynamic multi-lingual hero mapping
 ├── core/
-│   ├── crawlers/          # Platform-specific scraping implementations
+│   ├── crawlers/          # Platform-specific scraping implementations (Discord, YouTube, etc.)
 │   ├── analysis.py        # Sentiment engine and tag extraction logic
 │   ├── crawler.py         # Crawler orchestrator
 │   └── db.py              # SQLite database interface
 ├── data/
-│   └── jump_reviews.db    # Sentiment database
+│   ├── jump_reviews.db    # Analysis database
+│   └── discord_backup.jsonl # Raw JSONL backup
 └── main.py                # Unified CLI entry point
 ```
 
 ## ⚙️ Configuration
 
-- **Add Heroes**: Update `config/heroes.json`. The first alias in the list is used as the primary display name in the UI.
-- **Custom Mode Tags**: Add new keywords to the `GAME_MODES` dictionary in `core/analysis.py`.
+- **Add Heroes**: Update `config/heroes.json`. New characters like **Starrk** or **Nobara** can be added to their respective groups.
+- **Custom Mode Tags**: Add new keywords (e.g., for new seasonal modes) to the `GAME_MODES` dictionary in `core/analysis.py`.
 
 ## 📝 License
 
