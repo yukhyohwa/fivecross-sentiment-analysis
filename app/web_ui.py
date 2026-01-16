@@ -263,7 +263,7 @@ with st.sidebar:
     st.markdown("---")
     
     # Navigation (Top Priority)
-    menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "📄 分析月报", "🔧 配置管理"])
+    menu = st.radio("导航", ["📊 总览大屏", "📚 漫画 IP 大盘", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "📄 分析月报", "🔧 配置管理"], index=0)
     st.markdown("---")
     
     # Load Data for Sidebar Filters
@@ -299,11 +299,13 @@ if not df.empty and 'review_date' in df.columns:
 
 
 @st.cache_data(ttl=300)
+@st.cache_data(ttl=300)
 def load_hero_ip_map(game_key):
-    """Load mapping of Hero Code -> IP Group Name based on heroes.json"""
+    """Load mapping of Hero Code -> IP Group Name and Display Name based on heroes.json"""
     config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'heroes.json')
     hero_ip_map = {} # HeroCode -> IPName
     ip_hero_list = {} # IPName -> [HeroCodes]
+    hero_display_map = {} # HeroCode -> First Alias (Display Name)
     
     if os.path.exists(config_path):
         try:
@@ -315,12 +317,15 @@ def load_hero_ip_map(game_key):
                         # g_content is {HeroCode: [Aliases]}
                         codes = list(g_content.keys())
                         ip_hero_list[g_name] = codes
-                        for c in codes:
+                        for c, aliases in g_content.items():
                             hero_ip_map[c] = g_name
+                            # The first alias is usually the primary Chinese name
+                            hero_display_map[c] = aliases[0] if aliases else c
+                            
         except Exception as e:
             print(f"Error loading hero map: {e}")
             
-    return hero_ip_map, ip_hero_list
+    return hero_ip_map, ip_hero_list, hero_display_map
 
 @st.cache_data(ttl=300)
 def process_trends(df, hero_ip_map):
@@ -752,6 +757,142 @@ if menu == "📊 总览大屏":
                 st.error(f"趋势数据加载失败: {trend_e}")
         else:
             st.info("💡 尚未创建市场趋势数据库。")
+
+elif menu == "📚 漫画 IP 大盘":
+    render_hero("Manga IP Analysis", "IP 势力与角色热度分析")
+    
+    # Load Hero/IP Mapping
+    hero_ip_map, ip_hero_list, hero_display_map = load_hero_ip_map(selected_game_key)
+    
+    # Process Data
+    ip_df, hero_df = process_trends(df, hero_ip_map)
+    
+    if ip_df.empty:
+        st.info("暂无 IP 相关分析数据。请先执行‘深度分析’以提取角色提及。")
+    else:
+        # Convert Hero Codes to Display Names
+        hero_df['hero_name'] = hero_df['hero'].map(lambda x: hero_display_map.get(x, x))
+        
+        # ----------------------
+        # 1. Manga IP Overview (Heat & Volume)
+        # ----------------------
+        st.subheader("🔥 IP 势力总览")
+        
+        # Aggregate by IP
+        ip_stats = ip_df.groupby('ip').agg({
+            'count': 'sum',
+            'sentiment': 'mean'
+        }).reset_index()
+        
+        # Filter out "Unknown" if necessary
+        ip_stats = ip_stats[ip_stats['ip'] != 'Unknown']
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+             # Scatte Plot: Sentiment vs Volume
+             fig_ip = px.scatter(ip_stats, x='sentiment', y='count',
+                                size='count', color='ip',
+                                text='ip',
+                                labels={'sentiment': '平均情感 (0-1)', 'count': '评论提及量'},
+                                title='IP 声量与情感分布',
+                                color_discrete_sequence=JP_COLORS,
+                                template="plotly_white")
+             fig_ip.update_traces(textposition='top center')
+             st.plotly_chart(fig_ip, use_container_width=True)
+             
+        with col2:
+             # Ranking Table
+             st.write("🏆 热门 IP 排行")
+             st.dataframe(
+                 ip_stats.sort_values('count', ascending=False)[['ip', 'count', 'sentiment']],
+                 column_config={
+                     "sentiment": st.column_config.ProgressColumn("情感分", min_value=0, max_value=1, format="%.2f"),
+                     "count": st.column_config.NumberColumn("热度")
+                 },
+                 hide_index=True,
+                 use_container_width=True
+             )
+             
+        st.markdown("---")
+        
+        # ----------------------
+        # 2. Character Stacked Sentiment
+        # ----------------------
+        st.subheader("🎭 角色情感构成 (堆叠图)")
+        
+        # Filter Selector (Optional)
+        all_ips = sorted(ip_stats['ip'].unique())
+        selected_ips = st.multiselect("IP 筛选 (不选则默认全选)", all_ips, default=[])
+        
+        # Apply Filter
+        plot_df = hero_df.copy()
+        if selected_ips:
+            plot_df = plot_df[plot_df['ip'].isin(selected_ips)]
+        
+        if not plot_df.empty:
+            # Calculate Sentiment Buckets
+            NEG_TH = 0.4
+            POS_TH = 0.6
+            
+            hero_agg = plot_df.groupby('hero_name')['sentiment'].apply(list).reset_index()
+            
+            stacked_data = []
+            for _, row in hero_agg.iterrows():
+                scores = row['sentiment']
+                pos = sum(1 for s in scores if s > POS_TH)
+                neu = sum(1 for s in scores if NEG_TH <= s <= POS_TH)
+                neg = sum(1 for s in scores if s < NEG_TH)
+                total = len(scores)
+                
+                stacked_data.append({
+                    "hero": row['hero_name'],
+                    "Positive": pos,
+                    "Neutral": neu,
+                    "Negative": neg,
+                    "Total": total
+                })
+            
+            # Sort by Total Volume Descending
+            stack_df = pd.DataFrame(stacked_data).sort_values('Total', ascending=False)
+            
+             # Limit to Top 50 if too many
+            if len(stack_df) > 50:
+                st.caption(f"数据显示 Top 50 热门角色 (共 {len(stack_df)} 个)")
+                stack_df = stack_df.head(50)
+            
+            fig_stack = go.Figure()
+            
+            # Vertical Bars: X = Hero, Y = Count
+            fig_stack.add_trace(go.Bar(
+                x=stack_df['hero'], y=stack_df['Negative'], name='负面', 
+                marker_color='#e74c3c'
+            ))
+            fig_stack.add_trace(go.Bar(
+                x=stack_df['hero'], y=stack_df['Neutral'], name='中性', 
+                marker_color='#95a5a6'
+            ))
+            fig_stack.add_trace(go.Bar(
+                x=stack_df['hero'], y=stack_df['Positive'], name='正面', 
+                marker_color='#2ecc71'
+            ))
+            
+            fig_stack.update_layout(
+                barmode='stack',
+                title='角色热度与情感构成',
+                xaxis_title='角色',
+                yaxis_title='提及次数',
+                template='plotly_white',
+                height=500,
+                xaxis_tickangle=-45
+            )
+            st.plotly_chart(fig_stack, use_container_width=True)
+            
+            with st.expander("查看详细数据表"):
+                st.dataframe(stack_df, use_container_width=True)
+            
+        else:
+            st.info(f"当前筛选条件下暂无角色数据")
 
 elif menu == "🦸 英雄专项":
 

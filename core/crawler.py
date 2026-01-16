@@ -5,7 +5,7 @@ from config.settings import GAMES
 import datetime
 
 # Import crawler modules
-from core.crawlers import scrape_taptap_cn, scrape_taptap_intl, scrape_youtube, scrape_qooapp, scrape_bahamut, scrape_discord
+from core.crawlers import scrape_taptap_cn, scrape_taptap_intl, scrape_youtube, scrape_qooapp, scrape_bahamut, scrape_discord, scrape_baidutieba
 
 def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
     if game_key not in GAMES:
@@ -34,6 +34,8 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
             source_filter = "gamer.com.tw"
         elif source_filter.lower() == "discord":
             source_filter = "discord.com"
+        elif source_filter.lower() == "tieba":
+            source_filter = "tieba.baidu.com"
             
         print(f"Filter: Only scraping sources containing '{source_filter}'")
         target_urls = [u for u in target_urls if source_filter in u]
@@ -75,6 +77,8 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
                     scrape_bahamut(page, url, cutoff_date, game_key)
                 elif "discord.com" in url:
                     scrape_discord(page, url, cutoff_date, game_key)
+                elif "tieba.baidu.com" in url:
+                    scrape_baidutieba(page, url, cutoff_date, game_key)
                 else:
                     print(f"Unknown source for URL: {url}")
                 
