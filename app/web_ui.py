@@ -822,8 +822,10 @@ elif menu == "📚 漫画 IP 大盘":
         st.subheader("🎭 角色情感构成 (堆叠图)")
         
         # Filter Selector (Optional)
+        f_col1, _ = st.columns([1, 1])
         all_ips = sorted(ip_stats['ip'].unique())
-        selected_ips = st.multiselect("IP 筛选 (不选则默认全选)", all_ips, default=[])
+        with f_col1:
+            selected_ips = st.multiselect("IP 筛选 (不选则默认全选)", all_ips, default=[])
         
         # Apply Filter
         plot_df = hero_df.copy()
@@ -1025,7 +1027,7 @@ elif menu == "🦸 英雄专项":
                     
                     # --- Hero Trend Chart ---
                     # 1. Load Data for Trends
-                    hero_ip_map, _ = load_hero_ip_map(selected_game_key)
+                    hero_ip_map, _, _ = load_hero_ip_map(selected_game_key)
                     _, hero_trend_df = process_trends(df, hero_ip_map)
                     
                     if not hero_trend_df.empty:
@@ -1063,9 +1065,12 @@ elif menu == "🦸 英雄专项":
                                 mode='lines+markers'
                             ))
                             
-                            fig_h.update_layout(
+                            layout_args = dict(
                                 title=f"{display_map.get(selected_hero_code, selected_hero_code)} - 热度与情感走势",
-                                xaxis=dict(title=None),
+                                xaxis=dict(
+                                    title=None,
+                                    tickformat="%Y-%m-%d", # Force date format to avoid 00:00:00.001
+                                ),
                                 yaxis=dict(title='热度', showgrid=False),
                                 yaxis2=dict(title='情感', overlaying='y', side='right', range=[0, 1], showgrid=True),
                                 font_family="Inter", title_font_family="Noto Serif JP",
@@ -1073,6 +1078,16 @@ elif menu == "🦸 英雄专项":
                                 height=350,
                                 template='plotly_white'
                             )
+
+                            # Optimize display for single data point
+                            if len(h_stats) == 1:
+                                one_date = h_stats['date'].iloc[0]
+                                layout_args['xaxis']['range'] = [
+                                    one_date - pd.Timedelta(days=1),
+                                    one_date + pd.Timedelta(days=1)
+                                ]
+
+                            fig_h.update_layout(**layout_args)
                             st.plotly_chart(fig_h, use_container_width=True)
 
                     dims = hero_data[selected_hero_code]
@@ -1334,6 +1349,22 @@ elif menu == "📄 分析月报":
 elif menu == "🔧 配置管理":
     render_hero("System Configuration", "系统配置中心")
     
+    st.subheader("🌐 爬虫源监控列表")
+    st.caption(f"当前项目: {selected_game_name} ({selected_game_key})")
+    st.info("此列表展示当前生效的爬虫目标链接。如需新增或修改，请编辑 `config/settings.py` 文件。")
+
+    if selected_game_key in GAMES:
+        urls = GAMES[selected_game_key].get("urls", [])
+        if urls:
+            for i, u in enumerate(urls):
+                st.text_input(f"Source {i+1}", u, disabled=True, key=f"src_{i}")
+        else:
+            st.warning("暂未配置任何抓取链接。")
+    else:
+        st.error("无法读取当前项目配置。")
+    
+    st.markdown("---")
+
     st.subheader("🦸 英雄专项配置")
     st.info("在这里编辑游戏、英雄及其别名。")
     
