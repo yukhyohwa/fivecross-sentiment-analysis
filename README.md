@@ -70,7 +70,9 @@ fivecross-sentiment-analysis/
 ├── app/
 │   └── web_ui.py          # Streamlit Analysis dashboard
 ├── config/
-│   └── heroes.json        # Dynamic multi-lingual hero mapping
+│   ├── heroes.json        # Dynamic multi-lingual hero mapping
+│   ├── events.json        # Major game events timeline
+│   └── stopwords.txt      # Custom keyword ignore list
 ├── core/
 │   ├── crawlers/          # Scrapers (Discord, YouTube, Google Trends, etc.)
 │   ├── analysis.py        # Sentiment engine and tag extraction logic
@@ -83,11 +85,12 @@ fivecross-sentiment-analysis/
 └── main.py                # Unified CLI entry point
 ```
 
-## ⚙️ Configuration
+## ⚙️ Configuration (Accessible via Web UI)
 
-- **Add Heroes**: Update `config/heroes.json`. New characters like **Starrk** can be added to their respective groups.
-- **Stopwords**: Manage key phrases to ignore in analysis via `config/stopwords.txt`.
-- **Custom Mode Tags**: Add new keywords to the `GAME_MODES` dictionary in `core/analysis.py`.
+- **Heroes mapping**: Managed via `config/heroes.json`.
+- **Event Timeline**: Add major game events to `config/events.json` for trend annotation.
+- **Stopwords**: Manage noise words in `config/stopwords.txt`.
+- **System Aspects**: Adjust tagging logic in `core/analysis.py`.
 
 ## 📝 License
 
