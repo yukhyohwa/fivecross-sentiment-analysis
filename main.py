@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from core.analysis import process_reviews
 from core.crawler import run_crawler
+from generate_sentiment_report import generate_report
 
 def run_web_ui():
     print("Starting Web UI...")
@@ -23,7 +24,8 @@ def start_interactive_menu():
         print("1. Run Web UI (Visual Dashboard)")
         print("2. Run Crawler (Fetch new data)")
         print("3. Run Analysis (Process NLP on existing data)")
-        print("4. Exit")
+        print("4. Generate Analysis Report (Update Monthly Report)")
+        print("5. Exit")
         
         choice = input("\nEnter choice [1-4]: ").strip()
         
@@ -39,6 +41,10 @@ def start_interactive_menu():
             game_key = input("Enter game key [default: jump_assemble]: ").strip() or "jump_assemble"
             process_reviews(game_key)
         elif choice == '4':
+            print("\n--- Generating Report ---")
+            generate_report()
+            print("Report sync complete.")
+        elif choice == '5':
             print("Exiting.")
             sys.exit(0)
         else:
@@ -60,5 +66,9 @@ if __name__ == "__main__":
         run_crawler(args.game, days_back=args.days, source_filter=args.source)
     elif args.mode == "analyze":
         process_reviews(args.game, force=args.force)
+        print("\nUpdating monthly report...")
+        generate_report()
+    elif args.mode == "report":
+        generate_report()
     else:
         start_interactive_menu()

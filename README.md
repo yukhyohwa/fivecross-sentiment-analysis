@@ -17,17 +17,15 @@ A professional public sentiment monitoring and sentiment analysis system specifi
   - **Bahamut Forum (Traditional Chinese)**: Specialized logic for the TW/HK community with anti-bot bypass support.
 - **🌍 Global Market Intelligence**:
   - **Google Trends Integration**: Automated tracking of search popularity across 6 key regions: **Taiwan, Hong Kong, Brazil, USA, Thailand, and Japan**.
-  - **Regional Keyword Logic**: Uses localized terms (e.g., 「漫畫群星：大集結」 for TW/HK and 「Jump: Assemble」 for global) for maximum data precision.
 - **Advanced NLP Engine**:
   - **Hybrid Sentiment Analysis**: Integrates `SnowNLP` for granular score calculation (0.0 - 1.0) and domain-specific keyword weighting.
-  - **Multi-Lingual Hero Database**: Supports massive alias mapping for Simplified Chinese, Traditional Chinese, and English.
+  - **Official Announcement Filtering**: Automatically detects and sets neutral sentiment for official rules, guides, and bot messages.
   - **Multi-Entity Attribution**: Correctly handles clauses mentioning multiple heroes or system aspects in a single comment.
-- **Hero & Gameplay Insights**:
-  - **Expanded Hero Roster**: Real-time tracking for new releases like **Nobara Kugisaki (釘崎野薔薇)**, **Coyote Starrk (史塔克)**, **Minato (波風湊)**, **Luffy**, and **Sakura**.
-  - **Gameplay Mode Tagging**: Automatically recognizes specific modes such as **Summit War (頂上戰爭), Mugen Train (無限列車)**, MOBA (5v5), and more.
-- **Interactive Visualization**:
-  - **Executive Dashboard**: Unified view for sentiment charts, dynamic word clouds, and market heat trends.
-  - **Hero Drill-down**: Dedicated tabs for Skill, Visual, and Strength feedback.
+- **Interactive Visualization & Reporting**:
+  - **Executive Dashboard**: Unified view for sentiment charts, market heat trends, and hot topic evolution.
+  - **Topic Evolution**: Dynamic stacked bar charts showing how topics like **Optimization**, **Network**, and **Welfare** evolve over time, with **Day/Week/Month** aggregation support.
+  - **Analysis Reports**: Dedicated section in Web UI to browse and download pre-generated monthly/periodical analysis reports.
+  - **Hero Drill-down**: Detailed feedback categorization for Skill, Visual, and Strength dimensions.
 
 ## 🚀 Getting Started
 
@@ -37,7 +35,8 @@ A professional public sentiment monitoring and sentiment analysis system specifi
    pip install -r requirements.txt
    playwright install chromium
    ```
-3. **Security Configuration**:
+
+2. **Security Configuration**:
 
    Create a `.streamlit/secrets.toml` file based on the example:
    ```bash
@@ -45,25 +44,23 @@ A professional public sentiment monitoring and sentiment analysis system specifi
    ```
    Edit the file to set your admin username and passwords.
 
-4. **Launch Web Dashboard**:
+3. **Launch Web Dashboard**:
 
    ```bash
    python main.py web
    ```
-3. **Run Data Crawlers**:
+
+4. **Sync Data & Reports**:
 
    ```bash
-   # Crawl platforms like TapTap/Discord
+   # 1. Fetch new data
    python main.py crawl --source discord
 
-   # Update Market Heat (Google Trends)
-   python core/crawlers/google_trends.py
-   ```
-4. **Execute Deep Analysis**:
+   # 2. Run NLP analysis and AUTO-UPDATE monthly report
+   python main.py analyze
 
-   ```bash
-   # Re-process all existing data with latest NLP rules
-   python main.py analyze --force
+   # 3. (Optional) Run only the report generator
+   python main.py report
    ```
 
 ## 📂 Project Structure
@@ -80,15 +77,17 @@ fivecross-sentiment-analysis/
 │   └── db.py              # SQLite database interface
 ├── data/
 │   ├── jump_reviews.db    # Analysis database
-│   ├── market_trends.db   # Google Trends database
-│   └── discord_backup.jsonl # Raw JSONL backup
+│   └── market_trends.db   # Google Trends database
+├── reports/               # Pre-generated Markdown analysis reports
+├── generate_sentiment_report.py # Report generation logic
 └── main.py                # Unified CLI entry point
 ```
 
 ## ⚙️ Configuration
 
 - **Add Heroes**: Update `config/heroes.json`. New characters like **Starrk** can be added to their respective groups.
-- **Custom Mode Tags**: Add new keywords (e.g., for new seasonal modes) to the `GAME_MODES` dictionary in `core/analysis.py`.
+- **Stopwords**: Manage key phrases to ignore in analysis via `config/stopwords.txt`.
+- **Custom Mode Tags**: Add new keywords to the `GAME_MODES` dictionary in `core/analysis.py`.
 
 ## 📝 License
 

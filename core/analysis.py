@@ -45,6 +45,11 @@ def analyze_sentiment(text):
     if not text or not text.strip():
         return 0.5, "Neutral"
 
+    # 0. Official Pattern Detection (Forced Neutral)
+    official_phrases = ["頻道守則", "意見回饋", "營運團隊", "勾选建议类别", "勾選建議類別", "遵守【頻道守則】"]
+    if any(phrase in text for phrase in official_phrases):
+        return 0.5, "Neutral"
+
     # 1. Start with SnowNLP for Chinese content
     score = 0.5
     try:
@@ -179,7 +184,13 @@ def process_reviews(game_id=None, force=False):
             "full_content": content
         }
         
-        score, label = analyze_sentiment(content)
+        # Forced Neutral for Official Authors
+        official_authors = ["JUMP : 群星集結", "@JUMP : 群星集結"]
+        if any(oa in str(r[2]) for oa in official_authors): # r[2] is author
+            score, label = 0.5, "Neutral"
+        else:
+            score, label = analyze_sentiment(content)
+            
         details = detailed_aspect_analysis(content, current_gid, metadata=metadata)
         update_analysis_results(rid, score, label, None, details)
     print("Analysis complete.")

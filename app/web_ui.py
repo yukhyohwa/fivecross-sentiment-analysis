@@ -19,8 +19,6 @@ from core.db import get_all_data, init_db
 # from core.analysis import analyze_sentiment, detailed_aspect_analysis
 
 from config.settings import GAMES
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 import jieba
 import re
 import sqlite3
@@ -185,7 +183,7 @@ with st.sidebar:
     st.markdown("---")
     
     # Navigation (Top Priority)
-    menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "🔧 配置管理"])
+    menu = st.radio("导航", ["📊 总览大屏", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "📄 分析月报", "🔧 配置管理"])
     st.markdown("---")
     
     # Load Data for Sidebar Filters
@@ -375,23 +373,42 @@ if menu == "📊 总览大屏":
             
             if topic_trend_data:
                 trend_df = pd.DataFrame(topic_trend_data)
-                # 按天和话题分组统计
-                trend_pivot = trend_df.groupby(['date', 'topic']).size().reset_index(name='mentions')
                 
-                # 绘制折线图
-                fig_topic = px.line(trend_pivot, x='date', y='mentions', color='topic',
-                                    title="系统玩法话题热度趋势 (按提及次数)",
-                                    labels={'date': '日期', 'mentions': '提及次数', 'topic': '话题维度'},
-                                    line_shape='linear', markers=True)
+                # Apply date filter
+                s_dt_norm = pd.to_datetime(start_date).normalize()
+                e_dt_norm = pd.to_datetime(end_date).normalize()
+                trend_df = trend_df[(trend_df['date'] >= s_dt_norm) & (trend_df['date'] <= e_dt_norm)]
                 
-                # 优化外观
-                fig_topic.update_layout(
-                    hovermode="x unified", 
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                    xaxis=dict(title=None),
-                    yaxis=dict(title="提及频次")
-                )
-                st.plotly_chart(fig_topic, use_container_width=True)
+                if not trend_df.empty:
+                    # Time Aggregation Selector
+                    agg_col, _ = st.columns([1, 4])
+                    with agg_col:
+                        agg_type = st.radio("时间聚合", ["日", "周", "月"], index=1, horizontal=True)
+                    
+                    # Frequency Map
+                    freq_map = {"日": "D", "周": "W-MON", "月": "M"} # Use 'M' for months in to_period
+                    
+                    # Aggregation Logic
+                    bar_df = trend_df.copy()
+                    bar_df['date'] = bar_df['date'].dt.to_period(freq_map[agg_type]).dt.to_timestamp()
+                    bar_df = bar_df.groupby(['date', 'topic']).size().reset_index(name='mentions')
+                    
+                    # 绘制堆叠柱状图
+                    fig_bar = px.bar(bar_df, x='date', y='mentions', color='topic',
+                                    barmode='stack',
+                                    template="plotly_white",
+                                    labels={'date': '日期', 'mentions': '提及次', 'topic': '话题'})
+                    
+                    fig_bar.update_layout(
+                        height=400,
+                        margin=dict(t=10, b=0, l=0, r=0),
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                        xaxis=dict(title=None),
+                        yaxis=dict(title="提及频次")
+                    )
+                    st.plotly_chart(fig_bar, use_container_width=True)
+                else:
+                    st.info("💡 选定时间范围内暂无话题提取数据。")
             else:
                 st.info("💡 暂无话题提取数据。请确保已在爬虫管理中执行‘深度分析’。")
 
@@ -470,54 +487,6 @@ if menu == "📊 总览大屏":
                 st.info("数据量不足（需要至少 7 天以上的历史数据进行对比）。")
 
 
-        # 2. Word Cloud
-        st.markdown("---")
-        st.subheader("☁️ 评论词云 (Word Cloud)")
-
-        if 'content' in df.columns and not df['content'].dropna().empty:
-             full_text = " ".join(df['content'].dropna().astype(str))
-             # Chinese segmentation
-             cut_text = " ".join(jieba.cut(full_text))
-             
-             # Font Selection logic for Cloud/Local
-             font_path = None
-             potential_paths = [
-                 "C:/Windows/Fonts/msyh.ttc", # Windows
-                 "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc", # Linux (Debian/Ubuntu) - ZenHei
-                 "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", # Linux Noto
-                 "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"
-             ]
-             
-             for p in potential_paths:
-                 if os.path.exists(p):
-                     font_path = p
-                     break
-             
-             try:
-                 # Load stopwords
-                 stopwords = load_stopwords()
-                 
-                 wc_args = {
-                    "width": 1000, 
-                    "height": 400, 
-                    "background_color": 'white', 
-                    "collocations": False,
-                    "max_words": 150,
-                    "stopwords": stopwords
-                 }
-                 if font_path:
-                     wc_args["font_path"] = font_path
-                     
-                 wc = WordCloud(**wc_args).generate(cut_text)
-             except Exception as e:
-                 st.error(f"WordCloud Error: {e}")
-                 # Fallback
-                 wc = WordCloud(width=1000, height=400, background_color='white', stopwords=load_stopwords()).generate(cut_text)
-             
-             fig_wc, ax = plt.subplots(figsize=(12, 5))
-             ax.imshow(wc, interpolation='bilinear')
-             ax.axis("off")
-             st.pyplot(fig_wc)
 
         # 3. Google Trends / Market Heat
         st.markdown("---")
@@ -805,6 +774,58 @@ elif menu == "🔎 评论探索":
             st.write(row.get('content'))
             st.markdown("---")
 
+elif menu == "📄 分析月报":
+    st.title("📄 舆情分析月报")
+    st.info("展示已生成的周期性分析报告。如需生成新报告，请在后台运行 `generate_sentiment_report.py`。")
+    
+    # Define reports directory
+    reports_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'reports')
+    if not os.path.exists(reports_dir):
+        os.makedirs(reports_dir)
+        # Also check root for legacy reports
+        root_dir = os.path.dirname(os.path.dirname(__file__))
+        for f in os.listdir(root_dir):
+            if f.startswith("public_opinion_report_") and f.endswith(".md"):
+                import shutil
+                shutil.move(os.path.join(root_dir, f), os.path.join(reports_dir, f))
+
+    # List all markdown reports
+    report_files = sorted([f for f in os.listdir(reports_dir) if f.endswith(".md")], reverse=True)
+    
+    if not report_files:
+        st.warning("暂无已生成的报告。")
+    else:
+        # Create a nice display name for the selector
+        # e.g., public_opinion_report_202511.md -> 2025年11月 深度报告
+        display_names = []
+        for f in report_files:
+            date_match = re.search(r'(\d{4})(\d{2})', f)
+            if date_match:
+                display_names.append(f"📅 {date_match.group(1)}年{date_match.group(2)}月 分析报告")
+            else:
+                display_names.append(f"📄 {f}")
+        
+        selected_display = st.selectbox("选择报告版本", display_names)
+        selected_file = report_files[display_names.index(selected_display)]
+        
+        st.markdown("---")
+        
+        # Read and display the report
+        report_path = os.path.join(reports_dir, selected_file)
+        with open(report_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        # Display content
+        st.markdown(content)
+        
+        # Download button
+        st.download_button(
+            label="📥 下载 Markdown 报告",
+            data=content,
+            file_name=selected_file,
+            mime="text/markdown"
+        )
+
 elif menu == "🔧 配置管理":
     st.title("🔧 英雄配置管理")
     
@@ -838,7 +859,7 @@ elif menu == "🔧 配置管理":
 
     st.markdown("---")
     st.subheader("🚫 停用词管理 (Stopwords)")
-    st.info("在这里编辑词云中需要忽略的关键词，每行一个词。")
+    st.info("在这里编辑关键词分析中需要忽略的停用词，每行一个词。")
     
     stop_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'stopwords.txt')
     current_stopwords = ""
