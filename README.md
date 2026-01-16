@@ -74,12 +74,12 @@ fivecross-sentiment-analysis/
 ├── core/
 │   ├── crawlers/          # Scrapers (Discord, YouTube, Google Trends, etc.)
 │   ├── analysis.py        # Sentiment engine and tag extraction logic
-│   └── db.py              # SQLite database interface
+│   ├── db.py              # SQLite database interface
+│   └── generate_sentiment_report.py # Report generation logic
 ├── data/
 │   ├── jump_reviews.db    # Analysis database
 │   └── market_trends.db   # Google Trends database
 ├── reports/               # Pre-generated Markdown analysis reports
-├── generate_sentiment_report.py # Report generation logic
 └── main.py                # Unified CLI entry point
 ```
 

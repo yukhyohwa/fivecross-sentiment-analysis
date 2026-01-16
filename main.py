@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from core.analysis import process_reviews
 from core.crawler import run_crawler
-from generate_sentiment_report import generate_report
+from core.generate_sentiment_report import generate_report
 
 def run_web_ui():
     print("Starting Web UI...")

@@ -776,7 +776,7 @@ elif menu == "🔎 评论探索":
 
 elif menu == "📄 分析月报":
     st.title("📄 舆情分析月报")
-    st.info("展示已生成的周期性分析报告。如需生成新报告，请在后台运行 `generate_sentiment_report.py`。")
+    st.info("展示已生成的周期性分析报告。如需生成新报告，请在后台运行 `python main.py report`。")
     
     # Define reports directory
     reports_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'reports')

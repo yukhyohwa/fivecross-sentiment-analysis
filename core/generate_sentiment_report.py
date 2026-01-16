@@ -7,15 +7,18 @@ import jieba
 import os
 import re
 
+# Project root directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Database path
-DB_PATH = r"C:\Users\5xgames\Desktop\github\fivecross-sentiment-analysis\data\jump_reviews.db"
+DB_PATH = os.path.join(BASE_DIR, 'data', 'jump_reviews.db')
 # Configuration: Default to the first day of the current month
 import datetime
 START_DATE = datetime.datetime.now().replace(day=1).strftime('%Y-%m-%d')
 END_DATE = None  # Set to None for "until now"
 
 def load_stopwords():
-    stop_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'stopwords.txt')
+    stop_path = os.path.join(BASE_DIR, 'config', 'stopwords.txt')
     if os.path.exists(stop_path):
         with open(stop_path, 'r', encoding='utf-8') as f:
             return set([line.strip() for line in f if line.strip()])
@@ -163,7 +166,7 @@ def generate_report():
         report += "- **网络体验**: 网络延迟(460)问题是部分玩家的痛点。\n"
 
     # Save report to a file in reports directory
-    reports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reports')
+    reports_dir = os.path.join(BASE_DIR, 'reports')
     if not os.path.exists(reports_dir):
         os.makedirs(reports_dir)
         
