@@ -13,6 +13,8 @@ import plotly.graph_objects as go
 import json
 import time
 import io
+import itertools
+from collections import Counter
 
 from core.db import get_all_data, init_db
 # These were unused in the UI and causing ImportErrors due to missing/moved functions
@@ -47,6 +49,40 @@ def format_tooltip(meta):
     date = meta.get('date', '未知')
     
     return html.escape(f"完整评论: {clean_c}\n来源: {source}\n时间: {date}")
+
+def load_events():
+    events_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'events.json')
+    if os.path.exists(events_path):
+        try:
+            with open(events_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except: pass
+    return []
+
+def add_events_to_fig(fig, events, start_date, end_date):
+    if not events: return fig
+    # Normalize filter dates
+    s_dt = pd.to_datetime(start_date)
+    e_dt = pd.to_datetime(end_date)
+    
+    for ev in events:
+        try:
+            ev_start = pd.to_datetime(ev['start'])
+            ev_end = pd.to_datetime(ev['end'])
+            
+            # Show if event overlaps with filter
+            if (ev_start <= e_dt) and (ev_end >= s_dt):
+                fig.add_vrect(
+                    x0=max(ev_start, s_dt), 
+                    x1=min(ev_end, e_dt),
+                    fillcolor=ev.get('color', 'rgba(150, 150, 150, 0.15)'),
+                    layer="below", line_width=0,
+                    annotation_text=ev['name'],
+                    annotation_position="top left",
+                    annotation=dict(font_size=10, font_color="#666", bgcolor="white", opacity=0.8)
+                )
+        except: continue
+    return fig
 
 # Page Configuration
 st.set_page_config(
@@ -244,8 +280,66 @@ if menu == "📊 总览大屏":
                 rc = df['rating'].value_counts().sort_index().reset_index()
                 rc.columns = ['Star', 'Count']
                 rc['Star'] = rc['Star'].replace({0: '期待/0星'})
-                fig = px.bar(rc, x='Star', y='Count', color='Count')
-                st.plotly_chart(fig, use_container_width=True)
+                fig_star = px.bar(rc, x='Star', y='Count', 
+                                 template="plotly_white")
+                fig_star.update_traces(marker_color='#dcd0c0', marker_line_color='#bcaf9f', marker_line_width=1)
+                fig_star.update_layout(
+                    height=300,
+                    margin=dict(t=20, b=20, l=20, r=20),
+                    xaxis=dict(title=None),
+                    yaxis=dict(title=None)
+                )
+                st.plotly_chart(fig_star, use_container_width=True)
+
+        # 1.25 趋势关联分析 (Trend Analysis)
+        st.markdown("---")
+        st.subheader("📉 舆情波动与事件关联")
+        
+        events = load_events()
+        if not df.empty:
+            # Prepare Daily Stats
+            daily_stats = df.groupby(df['review_date'].dt.date).agg({
+                'id': 'count',
+                'sentiment_score': 'mean'
+            }).reset_index()
+            daily_stats.columns = ['date', 'count', 'sentiment']
+            
+            # Sub-header for Event Info
+            if events:
+                evt_list = []
+                for ev in events:
+                    if (pd.to_datetime(ev['start']) <= pd.to_datetime(end_date)) and (pd.to_datetime(ev['end']) >= pd.to_datetime(start_date)):
+                        evt_list.append(f"`{ev['name']}` ({ev['start']} ~ {ev['end']})")
+                if evt_list:
+                    st.caption(f"当前时段关联事件: {' | '.join(evt_list)}")
+
+            # Draw Dual Axis Chart
+            fig_trend = go.Figure()
+            # Volume (Bar)
+            fig_trend.add_trace(go.Bar(
+                x=daily_stats['date'], y=daily_stats['count'], name='评论量',
+                marker_color='rgba(200, 200, 200, 0.3)', yaxis='y'
+            ))
+            # Sentiment (Line)
+            fig_trend.add_trace(go.Scatter(
+                x=daily_stats['date'], y=daily_stats['sentiment'], name='平均情感',
+                line=dict(color='#2196F3', width=3), yaxis='y2'
+            ))
+            
+            # Add Events
+            fig_trend = add_events_to_fig(fig_trend, events, start_date, end_date)
+            
+            fig_trend.update_layout(
+                height=350,
+                template='plotly_white',
+                hovermode='x unified',
+                margin=dict(t=30, b=20),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                yaxis=dict(title='评论数', side='left', showgrid=False),
+                yaxis2=dict(title='情感分', side='right', overlaying='y', range=[0, 1], showgrid=True, gridcolor="#f0f0f0"),
+                xaxis=dict(title=None, showgrid=False)
+            )
+            st.plotly_chart(fig_trend, use_container_width=True)
 
         # 1. Activity Heatmap (Standard GitHub Contribution Graph)
         st.markdown("---")
@@ -398,7 +492,6 @@ if menu == "📊 总览大屏":
                                     barmode='stack',
                                     template="plotly_white",
                                     labels={'date': '日期', 'mentions': '提及次', 'topic': '话题'})
-                    
                     fig_bar.update_layout(
                         height=400,
                         margin=dict(t=10, b=0, l=0, r=0),
@@ -406,6 +499,10 @@ if menu == "📊 总览大屏":
                         xaxis=dict(title=None),
                         yaxis=dict(title="提及频次")
                     )
+                    
+                    # Add Events to Topic Evolution
+                    fig_bar = add_events_to_fig(fig_bar, events, start_date, end_date)
+                    
                     st.plotly_chart(fig_bar, use_container_width=True)
                 else:
                     st.info("💡 选定时间范围内暂无话题提取数据。")
@@ -653,7 +750,7 @@ elif menu == "🦸 英雄专项":
                     st.subheader(f"⚔️ {display_map.get(selected_hero_code, selected_hero_code)}")
                     dims = hero_data[selected_hero_code]
                     
-                    tabs = st.tabs(["💭 综合", "🗡️ 技能", "🎨 形象", "💪 强度"])
+                    tabs = st.tabs(["💭 综合", "🗡️ 技能", "🎨 形象", "💪 强度", "🔗 关联词网"])
                     
                     def render_feedback(dimension_key, tab_container):
                         with tab_container:
@@ -693,6 +790,87 @@ elif menu == "🦸 英雄专项":
                     render_feedback("Skill", tabs[1])
                     render_feedback("Visual", tabs[2])
                     render_feedback("Strength", tabs[3])
+
+                    # --- New Tab: Keyword Co-occurrence Network ---
+                    with tabs[4]:
+                        st.subheader("🔗 核心关联词网络")
+                        st.caption("分析玩家在讨论该英雄时，最常联想到的词汇组合。")
+                        
+                        # Collect all related texts
+                        hero_texts = []
+                        for dim_key in dims:
+                            for item in dims[dim_key]:
+                                hero_texts.append(item['text'])
+                        
+                        if len(hero_texts) < 3:
+                            st.info("数据量较少，无法生成关联网络。")
+                        else:
+                            stopwords = load_stopwords()
+                            # 1. Tokenize and clean
+                            tokenized_docs = []
+                            for txt in hero_texts:
+                                words = [w for w in jieba.cut(txt) if len(w) > 1 and w not in stopwords and not re.match(r'^[0-9.]+$', w)]
+                                if words: tokenized_docs.append(list(set(words))) # Unique words per sentence
+                            
+                            # 2. Count Co-occurrences
+                            pair_counts = Counter()
+                            word_freq = Counter()
+                            for doc in tokenized_docs:
+                                for word in doc: word_freq[word] += 1
+                                if len(doc) >= 2:
+                                    for pair in itertools.combinations(sorted(doc), 2):
+                                        pair_counts[pair] += 1
+                            
+                            if not pair_counts:
+                                st.info("未发现显著的词汇关联。")
+                            else:
+                                # 3. Prepare Graph Data (Top 30 edges)
+                                top_pairs = pair_counts.most_common(30)
+                                nodes = set()
+                                for p, c in top_pairs:
+                                    nodes.add(p[0])
+                                    nodes.add(p[1])
+                                
+                                # 4. Simple Circular Layout (Manual calculation for performance)
+                                import math
+                                node_list = list(nodes)
+                                pos = {node: (math.cos(2*math.pi*i/len(node_list)), math.sin(2*math.pi*i/len(node_list))) for i, node in enumerate(node_list)}
+                                
+                                # 5. Draw Edges
+                                edge_x, edge_y = [], []
+                                for (u, v), w in top_pairs:
+                                    edge_x.extend([pos[u][0], pos[v][0], None])
+                                    edge_y.extend([pos[u][1], pos[v][1], None])
+                                
+                                edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=1, color='#ddd'), hoverinfo='none', mode='lines')
+                                
+                                # 6. Draw Nodes
+                                node_x, node_y, node_text, node_size = [], [], [], []
+                                for node in node_list:
+                                    node_x.append(pos[node][0])
+                                    node_y.append(pos[node][1])
+                                    node_text.append(f"{node} (提及:{word_freq[node]})")
+                                    # Scale size based on frequency
+                                    node_size.append(max(10, min(40, word_freq[node] * 3)))
+                                
+                                node_trace = go.Scatter(
+                                    x=node_x, y=node_y, mode='markers+text',
+                                    text=[n for n in node_list],
+                                    textposition="top center",
+                                    hoverinfo='text', hovertext=node_text,
+                                    marker=dict(size=node_size, color='#9be9a8', line_width=2, line_color='#40c463')
+                                )
+                                
+                                fig_net = go.Figure(data=[edge_trace, node_trace],
+                                     layout=go.Layout(
+                                        showlegend=False, hovermode='closest',
+                                        margin=dict(b=0,l=0,r=0,t=40),
+                                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                        height=500,
+                                        plot_bgcolor='rgba(0,0,0,0)'
+                                    ))
+                                st.plotly_chart(fig_net, use_container_width=True)
 
 elif menu == "⚙️ 玩法反馈":
     st.title("⚙️ 玩法与系统反馈")
@@ -827,7 +1005,10 @@ elif menu == "📄 分析月报":
         )
 
 elif menu == "🔧 配置管理":
-    st.title("🔧 英雄配置管理")
+    st.title("🔧 系统配置中心")
+    
+    st.subheader("🦸 英雄专项配置")
+    st.info("在这里编辑游戏、英雄及其别名。")
     
     config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'heroes.json')
     
@@ -838,10 +1019,6 @@ elif menu == "🔧 配置管理":
     else:
         current_config = {}
         st.warning("Config file not found, creating new.")
-
-    # Show JSON editor
-    st.subheader("编辑 JSON 配置")
-    st.info("在这里手动添加游戏、英雄及其别名。")
     
     edited_json = st.text_area("Heroes Config (JSON)", json.dumps(current_config, indent=4, ensure_ascii=False), height=400)
     
@@ -876,4 +1053,45 @@ elif menu == "🔧 配置管理":
             st.success("停用词已保存！")
         except Exception as e:
             st.error(f"保存失败: {e}")
+
+    st.markdown("---")
+    st.subheader("📅 重大事件管理 (Events)")
+    st.info("编辑用于趋势图标注的重大事件。格式为 JSON 数组，包含 name, start, end 和 color (RGBA)。")
+
+    events_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'events.json')
+    current_events_str = "[]"
+    if os.path.exists(events_path):
+        try:
+            with open(events_path, 'r', encoding='utf-8') as f:
+                events_data = json.load(f)
+                current_events_str = json.dumps(events_data, indent=4, ensure_ascii=False)
+        except: pass
+    
+    edited_events = st.text_area("事件列表 (JSON)", current_events_str, height=300)
+    
+    if st.button("保存事件"):
+        try:
+            # Validate JSON
+            new_events = json.loads(edited_events)
+            if not isinstance(new_events, list):
+                st.error("格式错误：必须是一个 JSON 数组。")
+            else:
+                with open(events_path, 'w', encoding='utf-8') as f:
+                    json.dump(new_events, f, indent=4, ensure_ascii=False)
+                st.success("事件配置已保存！刷新总览大屏即可查看标注。")
+        except json.JSONDecodeError:
+            st.error("JSON 格式错误，请检查语法。")
+        except Exception as e:
+            st.error(f"保存失败: {e}")
+    
+    # Simple Preview of Events
+    if os.path.exists(events_path):
+        try:
+            with open(events_path, 'r', encoding='utf-8') as f:
+                preview_evs = json.load(f)
+                if preview_evs:
+                    st.write("🔍 **当前事件概览**:")
+                    for ev in preview_evs:
+                        st.write(f"- **{ev['name']}**: `{ev['start']}` 到 `{ev['end']}`")
+        except: pass
 
