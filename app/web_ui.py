@@ -142,22 +142,66 @@ if not check_password():
     st.info("Please log in to continue.")
     st.stop()
 
+# --- Helper Functions (New Style) ---
+def render_hero(title, subtitle="Sentiment Analysis System"):
+    st.markdown(f"""
+        <div class="hero-box">
+            <h1 style="margin: 0; font-size: 2.5em; letter-spacing: 0.05em;">{title}</h1>
+            <div style="height: 1px; background: #ECEAE4; width: 100px; margin: 15px 0;"></div>
+            <p style="color: #666; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.1em;">{subtitle}</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Traditional Japanese Color Palette
+JP_COLORS = ["#165E83", "#9F353A", "#D0AF4C", "#1B4D3E", "#70649A", "#B14B28"]
+
+# Custom CSS
 # Custom CSS
 st.markdown("""
 <style>
-    .metric-card {
-        background-color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        text-align: center;
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+    
+    .main {
+        background-color: #F9F7F2; /* Soft off-white / Washi paper feel */
+        color: #2D2D2D;
+        font-family: 'Inter', 'Noto Sans JP', sans-serif;
     }
+    
+    h1, h2, h3 {
+        font-family: 'Noto Serif JP', serif;
+        color: #1A1A1A;
+        font-weight: 700 !important;
+    }
+    
+    .stMetric {
+        background-color: #ffffff;
+        padding: 20px;
+        border: 1px solid #ECEAE4;
+        border-radius: 4px; /* Sharper, more minimalist */
+        box-shadow: none;
+    }
+    
+    .stSidebar {
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #ECEAE4;
+    }
+    
+    .hero-box {
+        background: #FFFFFF;
+        padding: 20px;
+        border-left: 5px solid #9F353A; /* Enji - traditional crimson accent */
+        margin-bottom: 30px;
+        border-radius: 2px;
+    }
+
+    /* Existing App Specific Styles */
     .feedback-box {
         border-left: 4px solid #ddd;
         padding: 10px;
         margin: 5px 0;
-        background-color: #f9f9f9;
+        background-color: #ffffff; /* Changed to white to match new theme */
         color: #333;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Slight shadow for depth */
     }
     .feedback-pos { border-left-color: #2ecc71; }
     .feedback-neg { border-left-color: #e74c3c; }
@@ -173,7 +217,7 @@ st.markdown("""
         border: 1px solid #bae6fd;
     }
     .feedback-box:hover {
-        background-color: #f0f7ff;
+        background-color: #f8f9fa;
         cursor: help;
         border-left-width: 6px;
         transition: all 0.2s;
@@ -253,8 +297,80 @@ if not df.empty and 'review_date' in df.columns:
     mask = (df['review_date'] >= s_dt) & (df['review_date'] <= e_dt)
     df = df.loc[mask]
 
+
+@st.cache_data(ttl=300)
+def load_hero_ip_map(game_key):
+    """Load mapping of Hero Code -> IP Group Name based on heroes.json"""
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'heroes.json')
+    hero_ip_map = {} # HeroCode -> IPName
+    ip_hero_list = {} # IPName -> [HeroCodes]
+    
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                fc = json.load(f)
+                if game_key in fc and "Groups" in fc[game_key]:
+                    groups = fc[game_key]["Groups"]
+                    for g_name, g_content in groups.items():
+                        # g_content is {HeroCode: [Aliases]}
+                        codes = list(g_content.keys())
+                        ip_hero_list[g_name] = codes
+                        for c in codes:
+                            hero_ip_map[c] = g_name
+        except Exception as e:
+            print(f"Error loading hero map: {e}")
+            
+    return hero_ip_map, ip_hero_list
+
+@st.cache_data(ttl=300)
+def process_trends(df, hero_ip_map):
+    """Process raw reviews into IP and Hero trend data."""
+    if df.empty or 'detailed_analysis' not in df.columns:
+        return pd.DataFrame(), pd.DataFrame()
+        
+    ip_records = []
+    hero_records = []
+    
+    for _, row in df.iterrows():
+        try:
+            if pd.isna(row['detailed_analysis']): continue
+            data = json.loads(row['detailed_analysis'])
+            heroes = data.get("Heroes", {})
+            
+            review_date = row['review_date']
+            sentiment = row['sentiment_score'] if 'sentiment_score' in row else 0.5
+            
+            # Track IPs mentioned in this review to avoid double counting IP heat per review (optional, but let's count all mentions)
+            # Actually, if a review mentions Goku and Vegeta, it counts twice for Dragon Ball? Usually yes for "Heat".
+            
+            for h_code in heroes.keys():
+                ip_group = hero_ip_map.get(h_code, "Unknown")
+                
+                # Hero Record
+                hero_records.append({
+                    "date": review_date,
+                    "hero": h_code,
+                    "ip": ip_group,
+                    "sentiment": sentiment,
+                    "count": 1
+                })
+                
+                # IP Record
+                if ip_group != "Unknown":
+                    ip_records.append({
+                        "date": review_date,
+                        "ip": ip_group,
+                        "sentiment": sentiment,
+                        "count": 1
+                    })
+                    
+        except:
+            continue
+            
+    return pd.DataFrame(ip_records), pd.DataFrame(hero_records)
+
 if menu == "📊 总览大屏":
-    st.title(f"📊 {selected_game_name} - 舆情总览")
+    render_hero(f"{selected_game_name} Overview", "舆情总览")
     if df.empty:
         st.warning("暂无数据，请去爬虫控制台抓取。")
     else:
@@ -272,6 +388,7 @@ if menu == "📊 总览大屏":
                 counts.columns = ['Label', 'Count']
                 fig = px.pie(counts, values='Count', names='Label', color='Label',
                              color_discrete_map={'Positive':'#2ecc71', 'Negative':'#e74c3c', 'Neutral':'#95a5a6'})
+                fig.update_layout(font_family="Inter", title_font_family="Noto Serif JP")
                 st.plotly_chart(fig, use_container_width=True)
         
         with c2:
@@ -282,9 +399,10 @@ if menu == "📊 总览大屏":
                 rc['Star'] = rc['Star'].replace({0: '期待/0星'})
                 fig_star = px.bar(rc, x='Star', y='Count', 
                                  template="plotly_white")
-                fig_star.update_traces(marker_color='#dcd0c0', marker_line_color='#bcaf9f', marker_line_width=1)
+                fig_star.update_traces(marker_color=JP_COLORS[0], marker_line_color='#bcaf9f', marker_line_width=1)
                 fig_star.update_layout(
                     height=300,
+                    font_family="Inter", title_font_family="Noto Serif JP",
                     margin=dict(t=20, b=20, l=20, r=20),
                     xaxis=dict(title=None),
                     yaxis=dict(title=None)
@@ -323,7 +441,7 @@ if menu == "📊 总览大屏":
             # Sentiment (Line)
             fig_trend.add_trace(go.Scatter(
                 x=daily_stats['date'], y=daily_stats['sentiment'], name='平均情感',
-                line=dict(color='#2196F3', width=3), yaxis='y2'
+                line=dict(color=JP_COLORS[1], width=3), yaxis='y2'
             ))
             
             # Add Events
@@ -332,6 +450,7 @@ if menu == "📊 总览大屏":
             fig_trend.update_layout(
                 height=350,
                 template='plotly_white',
+                font_family="Inter", title_font_family="Noto Serif JP",
                 hovermode='x unified',
                 margin=dict(t=30, b=20),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
@@ -491,9 +610,11 @@ if menu == "📊 总览大屏":
                     fig_bar = px.bar(bar_df, x='date', y='mentions', color='topic',
                                     barmode='stack',
                                     template="plotly_white",
+                                    color_discrete_sequence=JP_COLORS,
                                     labels={'date': '日期', 'mentions': '提及次', 'topic': '话题'})
                     fig_bar.update_layout(
                         height=400,
+                        font_family="Inter", title_font_family="Noto Serif JP",
                         margin=dict(t=10, b=0, l=0, r=0),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                         xaxis=dict(title=None),
@@ -621,7 +742,9 @@ if menu == "📊 总览大屏":
                     
                     fig_trend = px.line(plot_df, x='date', y='interest_score', color='region_name',
                                        title=f"'{selected_kw}' 近期搜索热度 (100为峰值)",
+                                       color_discrete_sequence=JP_COLORS,
                                        labels={'interest_score': '搜索热度', 'date': '日期', 'region_name': '地区'})
+                    fig_trend.update_layout(font_family="Inter", title_font_family="Noto Serif JP")
                     st.plotly_chart(fig_trend, use_container_width=True)
                 else:
                     st.info("📊 市场趋势数据库暂无数据，请运行 google_trends.py 抓取。")
@@ -632,7 +755,7 @@ if menu == "📊 总览大屏":
 
 elif menu == "🦸 英雄专项":
 
-    st.title("🦸 英雄专项反馈")
+    render_hero("Hero Feedback", "英雄专项反馈")
     
     if df.empty or 'detailed_analysis' not in df.columns:
         st.info("暂无详细分析数据")
@@ -729,25 +852,88 @@ elif menu == "🦸 英雄专项":
                 if ungrouped_heroes:
                     group_names.append("其他 - 期待联动")
                 
-                selected_group = st.selectbox("选择IP系列 (Anime Source)", group_names)
+                # Side-by-side selector layout
+                f_c1, f_c2 = st.columns(2)
                 
+                with f_c1:
+                    selected_group = st.selectbox("选择IP系列 (Anime Source)", group_names)
+                
+                # Filter Logic
                 if selected_group == "其他 - 期待联动":
                     selected_group_heroes = ungrouped_heroes
                 elif selected_group != "全部":
                     # Filter heroes belonging to this group
                     allowed_heroes = set(hero_groups[selected_group])
                     selected_group_heroes = [h for h in hero_data.keys() if h in allowed_heroes]
+                else:
+                    # '全部': re-select all configured
+                    selected_group_heroes = [h for h in hero_data.keys() if h in all_configured_heroes]
             
             if not selected_group_heroes:
                 st.warning("该系列暂无相关反馈数据的英雄。")
+                selected_hero_code = None
             else:
                 # Sort by Display Name
                 sorted_heroes = sorted(selected_group_heroes, key=lambda x: display_map.get(x, x))
                 
-                selected_hero_code = st.selectbox("选择角色", sorted_heroes, format_func=lambda x: display_map.get(x, x))
+                with f_c2:
+                    selected_hero_code = st.selectbox("选择角色", sorted_heroes, format_func=lambda x: display_map.get(x, x))
                 
                 if selected_hero_code:
                     st.subheader(f"⚔️ {display_map.get(selected_hero_code, selected_hero_code)}")
+                    
+                    # --- Hero Trend Chart ---
+                    # 1. Load Data for Trends
+                    hero_ip_map, _ = load_hero_ip_map(selected_game_key)
+                    _, hero_trend_df = process_trends(df, hero_ip_map)
+                    
+                    if not hero_trend_df.empty:
+                        # Aggregation Selector
+                        agg_type_h = st.radio("趋势时间粒度", ["周 (Weekly)", "日 (Daily)", "月 (Monthly)"], key="hero_trend_agg", horizontal=True)
+                        freq_map_h = {"周 (Weekly)": "W-MON", "日 (Daily)": "D", "月 (Monthly)": "M"}
+                        freq_code_h = freq_map_h[agg_type_h]
+                        
+                        this_hero_df = hero_trend_df[hero_trend_df['hero'] == selected_hero_code]
+                        
+                        if not this_hero_df.empty:
+                            # Group by Date-Freq
+                            h_stats = this_hero_df.groupby([pd.Grouper(key='date', freq=freq_code_h)]).agg({
+                                'count': 'count',
+                                'sentiment': 'mean'
+                            }).reset_index()
+                            
+                            # Treat 0 volume as missing for dashed connection
+                            h_stats['count'] = h_stats['count'].replace(0, None)
+                            
+                            fig_h = go.Figure()
+                            # Volume
+                            fig_h.add_trace(go.Scatter(
+                                x=h_stats['date'], y=h_stats['count'], name='热度 (Mentions)',
+                                line=dict(color=JP_COLORS[0], width=2, dash='dot'),
+                                connectgaps=True,
+                                mode='lines+markers'
+                            ))
+                            # Sentiment
+                            fig_h.add_trace(go.Scatter(
+                                x=h_stats['date'], y=h_stats['sentiment'], name='平均情感',
+                                line=dict(color=JP_COLORS[1], width=3, dash='dot'),
+                                connectgaps=True,
+                                yaxis='y2',
+                                mode='lines+markers'
+                            ))
+                            
+                            fig_h.update_layout(
+                                title=f"{display_map.get(selected_hero_code, selected_hero_code)} - 热度与情感走势",
+                                xaxis=dict(title=None),
+                                yaxis=dict(title='热度', showgrid=False),
+                                yaxis2=dict(title='情感', overlaying='y', side='right', range=[0, 1], showgrid=True),
+                                font_family="Inter", title_font_family="Noto Serif JP",
+                                hovermode='x unified',
+                                height=350,
+                                template='plotly_white'
+                            )
+                            st.plotly_chart(fig_h, use_container_width=True)
+
                     dims = hero_data[selected_hero_code]
                     
                     tabs = st.tabs(["💭 综合", "🗡️ 技能", "🎨 形象", "💪 强度", "🔗 关联词网"])
@@ -873,7 +1059,7 @@ elif menu == "🦸 英雄专项":
                                 st.plotly_chart(fig_net, use_container_width=True)
 
 elif menu == "⚙️ 玩法反馈":
-    st.title("⚙️ 玩法与系统反馈")
+    render_hero("Gameplay & System", "玩法与系统反馈")
     
     if df.empty or 'detailed_analysis' not in df.columns:
         st.info("暂无数据")
@@ -929,7 +1115,7 @@ elif menu == "⚙️ 玩法反馈":
 
 
 elif menu == "🔎 评论探索":
-    st.title("🔎 评论探索")
+    render_hero("Comment Explorer", "评论探索")
     if not df.empty:
         search = st.text_input("搜索内容")
         filtered_df = df
@@ -953,7 +1139,7 @@ elif menu == "🔎 评论探索":
             st.markdown("---")
 
 elif menu == "📄 分析月报":
-    st.title("📄 舆情分析月报")
+    render_hero("Monthly Analysis Report", "舆情分析月报")
     st.info("展示已生成的周期性分析报告。如需生成新报告，请在后台运行 `python main.py report`。")
     
     # Define reports directory
@@ -1005,7 +1191,7 @@ elif menu == "📄 分析月报":
         )
 
 elif menu == "🔧 配置管理":
-    st.title("🔧 系统配置中心")
+    render_hero("System Configuration", "系统配置中心")
     
     st.subheader("🦸 英雄专项配置")
     st.info("在这里编辑游戏、英雄及其别名。")
