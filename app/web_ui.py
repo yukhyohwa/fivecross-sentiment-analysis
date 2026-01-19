@@ -1259,17 +1259,10 @@ elif menu == "🦸 英雄专项":
                     all_configured_heroes.update(h_list)
             
             selected_group_heroes = [h for h in hero_data.keys() if h in all_configured_heroes]
-            
-            # stragglers/others logic (if any are left that we actually want)
-            ungrouped_heroes = [] # Force empty as we don't want to show unconfigured IPs
 
             if hero_groups:
                 # Groups are sorted keys now
                 group_names = ["全部"] + sorted(list(hero_groups.keys()))
-                
-                # Add "Others" option if there are stragglers
-                if ungrouped_heroes:
-                    group_names.append("其他 - 期待联动")
                 
                 # Side-by-side selector layout
                 f_c1, f_c2 = st.columns(2)
@@ -1278,9 +1271,7 @@ elif menu == "🦸 英雄专项":
                     selected_group = st.selectbox("选择IP系列 (Anime Source)", group_names)
                 
                 # Filter Logic
-                if selected_group == "其他 - 期待联动":
-                    selected_group_heroes = ungrouped_heroes
-                elif selected_group != "全部":
+                if selected_group != "全部":
                     # Filter heroes belonging to this group
                     allowed_heroes = set(hero_groups[selected_group])
                     selected_group_heroes = [h for h in hero_data.keys() if h in allowed_heroes]
@@ -1502,7 +1493,8 @@ elif menu == "⚙️ 玩法反馈":
         official_filter_keywords = [
             "活动期间", "活动时间", "活动有效期", "贴吧专属福利", "截止至", 
             "获得**奖励用户名单", "严禁讨论", "吧友参与活动", 
-            "加入玩家交流群", "宝贵反馈和建议", "盖楼送福利", "官方吧吧务组","衷心感谢大家"
+            "加入玩家交流群", "宝贵反馈和建议", "盖楼送福利", "官方吧吧务组","衷心感谢大家",
+            "礼包码激活方式","我们将基于本轮数据进行整理与优化","玩法规则"
         ]
 
         for json_str in df['detailed_analysis'].dropna():

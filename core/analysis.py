@@ -70,18 +70,31 @@ def analyze_sentiment(text):
         pass
 
     # 2. Apply rule-based bias for game-specific sentiment (More sensitive)
-    pos_words = ["好", "赞", "贊", "强", "強", "不错", "不錯", "神", "神作", "优秀", "还原", "流畅", "良心", "爽", "喜欢", "期待", "好用", "还原度"]
-    neg_words = ["烂", "爛", "差", "负面", "失望", "废", "难", "坑", "垃圾", "卡", "慢", "贵", "恶心", "辣鸡", "丑", "弱", "削", "砍", "不听话", "贵得要死", "贵死", "吃相难看", "离谱", "滚", "没诚意", "割韭菜"]
+    pos_words = ["好", "赞", "贊", "强", "強", "不错", "不錯", "神", "神作", "优秀", "还原", "流畅", "良心", "爽", "喜欢", "期待", "好用", "还原度", "精美", "丝滑"]
+    neg_words = [
+        "烂", "爛", "差", "负面", "失望", "废", "难", "坑", "垃圾", "卡", "慢", "贵", "恶心", "辣鸡", "丑", "弱", "削", "砍", 
+        "不听话", "贵得要死", "贵死", "吃相难看", "离谱", "滚", "没诚意", "割韭菜",
+        "一坨", "稀碎", "稀烂", "拉胯", "拉垮", "不好", "不行", "僵硬", "笨重", "拉稀", "毁", "崩", "劝退",
+        "傻逼", "SB", "脑残", "孤儿", "寄了", "凉了", "卸载", "删游戏", "退钱", "骗氪", "暗改", "差评", "给一星",
+        "垃圾平衡", "平衡烂", "匹配烂", "人机多", "恶性bug", "滚出", "糟蹋", "毁原作", "没救了", "玩你妈",
+        "傻X", "sb", "垃圾公司", "避雷", "快逃", "千万别玩", "浪费时间", "什么玩意", "玩不下去"
+    ]
     
     # Strong negatives that should heavily weight the score
-    strong_negatives = ["贵得要死", "太贵", "吃相难看", "垃圾", "烂", "烂作", "割韭菜"]
+    strong_negatives = [
+        "贵得要死", "太贵", "吃相难看", "垃圾", "烂", "烂作", "割韭菜", "稀烂", "稀碎", "一坨", "狗屎", "答辩",
+        "傻逼", "SB", "脑残", "给一星", "退钱", "孤儿", "玩你妈", "垃圾公司", "喂屎", "差到极致", "千万别玩"
+    ]
     
     for w in pos_words:
-        if w in text: score += 0.1
+        # Special handling: Don't count "好" if "不好" or "不怎么好" or "不太好" is present
+        if w == "好" and any(neg in text for neg in ["不好", "不太好", "不怎么好", "好卡", "好难"]):
+            continue
+        if w in text: score += 0.15
     for w in neg_words:
-        if w in text: score -= 0.1
+        if w in text: score -= 0.15
     for w in strong_negatives:
-        if w in text: score -= 0.2 # Additional penalty
+        if w in text: score -= 0.25 # Additional penalty
     
     # 3. Handle English Rule-based if no Chinese
     if not re.search(r'[\u4e00-\u9fa5]', text):
