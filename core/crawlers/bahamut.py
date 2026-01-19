@@ -8,7 +8,7 @@ from .base import save_review_helper, parse_date
 from config.settings import BAHAMUT_USER, BAHAMUT_PASS
 
 # Unified Backup naming
-BACKUP_FILE = "data/bahamut_backup.jsonl"
+BACKUP_FILE = "data/backups/bahamut_backup.jsonl"
 
 def login_bahamut(page: Page):
     print("  [bahamut] Navigating to Login Page...")
@@ -73,7 +73,7 @@ def scrape_bahamut(page: Page, url: str, cutoff_date: datetime.datetime, game_ke
     login_bahamut(page)
     
     # Ensure backup dir
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("data/backups", exist_ok=True)
     
     # 1. Get Thread Links
     threads_to_scrape = []

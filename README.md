@@ -17,18 +17,16 @@ A professional public sentiment monitoring and sentiment analysis system specifi
   - **Bahamut Forum (Traditional Chinese)**: Specialized logic for the TW/HK community with anti-bot bypass support.
 - **🌍 Global Market Intelligence**:
   - **Google Trends Integration**: Automated tracking of search popularity across 6 key regions: **Taiwan, Hong Kong, Brazil, USA, Thailand, and Japan**.
-- **🧠 Advanced Semantic AI**:
-  - **Semantic Map**: Visualizes the entire public opinion landscape using **Google Gemini Embeddings** and T-SNE reduction, automatically clustering similar topics (e.g., "Network Lag", "Hero Balance").
-  - **Deep Semantic Search**: Search functionality that understands context beyond simple keyword matching.
-- **Advanced NLP Engine**:
-  - **Hybrid Sentiment Analysis**: Integrates `SnowNLP` for granular score calculation (0.0 - 1.0) and domain-specific keyword weighting.
-  - **Official Announcement Filtering**: Automatically detects and sets neutral sentiment for official rules, guides, and bot messages.
-  - **Multi-Entity Attribution**: Correctly handles clauses mentioning multiple heroes or system aspects in a single comment.
+- **🧠 Advanced NLP & Sentiment Engine**:
+  - **Refinement Sentiment Analysis**: Hybrid `SnowNLP` + domain-specific rule engine. Now with a **highly responsive gaming slang dictionary** (e.g., "骗氪", "拉胯", "寄了", "傻逼") for extreme accuracy in community feedback.
+  - **Semantic Panorama**: Visualizes public opinion using **Google Gemini 2.0 Flash Embeddings**. Periodically updated via `scripts/process_semantic.py` to optimize API usage.
+  - **Official Announcement Filtering**: Robust detection of official rules and bot messages to prevent sentiment noise.
+  - **Multi-Entity Attribution**: Clause-level sentiment analysis for precise tagging of multiple heroes or system aspects.
 - **Interactive Visualization & Reporting**:
   - **Executive Dashboard**: Unified view for sentiment charts, market heat trends, and hot topic evolution.
-  - **Topic Evolution**: Dynamic stacked bar charts showing how topics like **Optimization**, **Network**, and **Welfare** evolve over time, with **Day/Week/Month** aggregation support.
-  - **Analysis Reports**: Dedicated section in Web UI to browse and download pre-generated monthly/periodical analysis reports.
-  - **Hero Drill-down**: Detailed feedback categorization for Skill, Visual, and Strength dimensions. Now supports **Demon Slayer (鬼灭之刃)** characters.
+  - **Hero Drill-down**: Deep-dive into **Skill**, **Visual**, and **Strength** feedback with side-by-side IP/Hero selectors.
+  - **Analysis Reports**: Web-based viewer for monthly Markdown reports with full history support.
+- **🦸 Character Support**: Extensive library covering **Dragon Ball, One Piece, Naruto, Bleach, Jujutsu Kaisen, Hunter x Hunter, Mashle, Undead Unluck, and Demon Slayer**.
 
 ## 🚀 Getting Started
 

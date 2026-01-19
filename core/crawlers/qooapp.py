@@ -5,13 +5,13 @@ import json
 import os
 from core.crawlers.base import parse_date, save_review_helper
 
-BACKUP_FILE = "data/qooapp_backup.jsonl"
+BACKUP_FILE = "data/backups/qooapp_backup.jsonl"
 
 def scrape_qooapp(page, url, cutoff_date, game_key):
     source = "qoo" # Standardizing to 'qoo'
     
     # Ensure backup dir
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("data/backups", exist_ok=True)
     
     page.goto(url)
     time.sleep(3)

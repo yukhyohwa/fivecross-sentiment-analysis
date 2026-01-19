@@ -9,7 +9,7 @@ from .base import save_review_helper, parse_date
 from config.settings import DISCORD_USER, DISCORD_PASS
 
 # Unified Backup naming
-BACKUP_FILE = "data/discord_backup.jsonl"
+BACKUP_FILE = "data/backups/discord_backup.jsonl"
 
 def login_discord(page: Page):
     if not DISCORD_USER or not DISCORD_PASS:
@@ -111,7 +111,7 @@ def scrape_messages_in_container(container: Locator, game_key, guild_id, channel
 
 def scrape_discord(page: Page, url: str, cutoff_date: datetime.datetime, game_key: str):
     source = "discord"
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("data/backups", exist_ok=True)
     
     match = re.search(r'channels/(\d+)/(\d+)', url)
     guild_id = match.group(1) if match else "unknown"

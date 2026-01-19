@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CACHE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'cluster_cache.jsonl')
+CACHE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'backups', 'cluster_cache.jsonl')
 
 # --- Multi-Key Support ---
 api_keys_raw = os.getenv("GEMINI_API_KEYS") or os.getenv("GEMINI_API_KEY")

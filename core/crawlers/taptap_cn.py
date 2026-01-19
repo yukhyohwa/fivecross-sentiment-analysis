@@ -5,14 +5,14 @@ import os
 import datetime
 from core.crawlers.base import parse_date, save_review_helper
 
-BACKUP_FILE = "data/taptap_cn_backup.jsonl"
+BACKUP_FILE = "data/backups/taptap_cn_backup.jsonl"
 
 def scrape_taptap_cn(page, url, cutoff_date, game_key):
     # CN Source name
     source = "taptap"
     
     # Ensure backup dir
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("data/backups", exist_ok=True)
     
     page.goto(url)
     time.sleep(random.uniform(2, 5))
