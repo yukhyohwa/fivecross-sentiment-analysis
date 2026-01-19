@@ -5,6 +5,15 @@ import datetime
 import os
 from config.settings import GAMES
 from snownlp import SnowNLP
+import nltk
+from nltk.stem import WordNetLemmatizer
+try:
+    from pythainlp import word_tokenize as thai_tokenize
+    nltk.download('wordnet', quiet=True)
+    lemmatizer = WordNetLemmatizer()
+    HAS_SPECIALIZED = True
+except ImportError:
+    HAS_SPECIALIZED = False
 
 # Specific emotions for Gemini tagging (Schema extension placeholder)
 EMOTION_CHANNELS = ["anger", "disappointment", "expectation", "surprise", "sarcasm", "gratitude"]
@@ -148,23 +157,37 @@ def detailed_aspect_analysis(text, game_id="jump_assemble", metadata=None):
                         "metadata": metadata
                     })
 
-        for aspect, keywords in GAME_ASPECTS.items():
-            if any(k in clause.lower() for k in keywords):
-                 if aspect not in analysis["System"]:
-                     analysis["System"][aspect] = []
-                 
-                 tags = []
-                 for mode, mode_keywords in GAME_MODES.items():
-                     if any(mk in clause.lower() for mk in mode_keywords):
-                         tags.append(mode)
-                         
-                 analysis["System"][aspect].append({
-                     "text": clause, 
-                     "label": label, 
-                     "score": score, 
-                     "tags": tags,
-                     "metadata": metadata
-                 })
+    for aspect, keywords in GAME_ASPECTS.items():
+        # Optimization: use smart matching for English/Thai
+        match_found = False
+        if re.search(r'[\u0E00-\u0E7F]', clause) and HAS_SPECIALIZED:
+            # Thai specialized matching
+            tokens = thai_tokenize(clause, engine="newmm")
+            if any(k in tokens for k in keywords): match_found = True
+        elif not re.search(r'[\u4e00-\u9fa5]', clause) and HAS_SPECIALIZED:
+            # English lemmatized matching
+            tokens = [lemmatizer.lemmatize(w.lower()) for w in re.findall(r'\b[a-z]{2,}\b', clause)]
+            if any(lemmatizer.lemmatize(k.lower()) in tokens for k in keywords): match_found = True
+        else:
+            # Standard substring matching for Chinese/General
+            if any(k in clause.lower() for k in keywords): match_found = True
+
+        if match_found:
+             if aspect not in analysis["System"]:
+                 analysis["System"][aspect] = []
+             
+             tags = []
+             for mode, mode_keywords in GAME_MODES.items():
+                 if any(mk in clause.lower() for mk in mode_keywords):
+                     tags.append(mode)
+                     
+             analysis["System"][aspect].append({
+                 "text": clause, 
+                 "label": label, 
+                 "score": score, 
+                 "tags": tags,
+                 "metadata": metadata
+             })
                  
     return json.dumps(analysis, ensure_ascii=False)
 

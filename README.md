@@ -17,6 +17,9 @@ A professional public sentiment monitoring and sentiment analysis system specifi
   - **Bahamut Forum (Traditional Chinese)**: Specialized logic for the TW/HK community with anti-bot bypass support.
 - **🌍 Global Market Intelligence**:
   - **Google Trends Integration**: Automated tracking of search popularity across 6 key regions: **Taiwan, Hong Kong, Brazil, USA, Thailand, and Japan**.
+- **🧠 Advanced Semantic AI**:
+  - **Semantic Map**: Visualizes the entire public opinion landscape using **Google Gemini Embeddings** and T-SNE reduction, automatically clustering similar topics (e.g., "Network Lag", "Hero Balance").
+  - **Deep Semantic Search**: Search functionality that understands context beyond simple keyword matching.
 - **Advanced NLP Engine**:
   - **Hybrid Sentiment Analysis**: Integrates `SnowNLP` for granular score calculation (0.0 - 1.0) and domain-specific keyword weighting.
   - **Official Announcement Filtering**: Automatically detects and sets neutral sentiment for official rules, guides, and bot messages.
@@ -25,7 +28,7 @@ A professional public sentiment monitoring and sentiment analysis system specifi
   - **Executive Dashboard**: Unified view for sentiment charts, market heat trends, and hot topic evolution.
   - **Topic Evolution**: Dynamic stacked bar charts showing how topics like **Optimization**, **Network**, and **Welfare** evolve over time, with **Day/Week/Month** aggregation support.
   - **Analysis Reports**: Dedicated section in Web UI to browse and download pre-generated monthly/periodical analysis reports.
-  - **Hero Drill-down**: Detailed feedback categorization for Skill, Visual, and Strength dimensions.
+  - **Hero Drill-down**: Detailed feedback categorization for Skill, Visual, and Strength dimensions. Now supports **Demon Slayer (鬼灭之刃)** characters.
 
 ## 🚀 Getting Started
 
@@ -42,7 +45,7 @@ A professional public sentiment monitoring and sentiment analysis system specifi
    ```bash
    cp .streamlit/secrets.toml.example .streamlit/secrets.toml
    ```
-   Edit the file to set your admin username and passwords.
+   Edit the file to set your admin username and passwords. For AI features, ensure `GEMINI_API_KEY` is set in `.env`.
 
 3. **Launch Web Dashboard**:
 
@@ -70,18 +73,21 @@ fivecross-sentiment-analysis/
 ├── app/
 │   └── web_ui.py          # Streamlit Analysis dashboard
 ├── config/
-│   ├── heroes.json        # Dynamic multi-lingual hero mapping
+│   ├── heroes.json        # Dynamic multi-lingual hero mapping (Supports DBZ, One Piece, Naruto, Bleach, JJK, Hunter, Mashle, Undead Unluck, Demon Slayer)
 │   ├── events.json        # Major game events timeline
 │   └── stopwords.txt      # Custom keyword ignore list
 ├── core/
 │   ├── crawlers/          # Scrapers (Discord, YouTube, Google Trends, etc.)
 │   ├── analysis.py        # Sentiment engine and tag extraction logic
 │   ├── db.py              # SQLite database interface
+│   ├── gemini_client.py   # AI Client for embeddings and summarization
 │   └── generate_sentiment_report.py # Report generation logic
 ├── data/
 │   ├── jump_reviews.db    # Analysis database
 │   └── market_trends.db   # Google Trends database
 ├── reports/               # Pre-generated Markdown analysis reports
+├── scripts/
+│   └── process_semantic.py # Script for Semantic Map generation
 └── main.py                # Unified CLI entry point
 ```
 

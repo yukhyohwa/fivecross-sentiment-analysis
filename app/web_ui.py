@@ -25,6 +25,79 @@ import jieba
 import re
 import sqlite3
 
+# --- Segmentation Optimization ---
+@st.cache_resource
+def init_segmentation():
+    """Add hero names and sentiment keywords to jieba for better segmentation."""
+    # 1. From GAMES keywords
+    for game in GAMES.values():
+        if 'keywords' in game:
+            for word in game['keywords'].keys():
+                if len(word) > 1:
+                    jieba.add_word(word)
+    
+    # 2. Strong sentiment keywords for better identification
+    strong_keywords = ["贵得要死", "吃相难看", "割韭菜", "白嫖", "送福袋", "还原度", "匹配机制", "连败", "连胜"]
+    for kw in strong_keywords:
+        jieba.add_word(kw)
+    
+    return True
+
+init_segmentation()
+
+# --- Advanced Tokenization Setup ---
+try:
+    import nltk
+    from nltk.stem import WordNetLemmatizer
+    from pythainlp import word_tokenize as thai_tokenize
+    # Download necessary NLTK data
+    nltk.download('wordnet', quiet=True)
+    nltk.download('omw-1.4', quiet=True)
+    lemmatizer = WordNetLemmatizer()
+    HAS_SPECIALIZED = True
+except ImportError:
+    HAS_SPECIALIZED = False
+
+def smart_tokenize(text, source=None, stopwords=None):
+    """
+    Advanced multi-language tokenization:
+    - Thai: pythainlp (Dictionary-based)
+    - English: NLTK Lemmatization + Regex
+    - Chinese: Jieba
+    """
+    if not text or not isinstance(text, str):
+        return []
+    
+    text = text.lower()
+    
+    # 1. Detect Thai Content (Thai characters: \u0E00-\u0E7F)
+    if re.search(r'[\u0E00-\u0E7F]', text):
+        if HAS_SPECIALIZED:
+            words = thai_tokenize(text, engine="newmm")
+        else:
+            words = re.findall(r'[\u0E00-\u0E7F]+', text)
+            
+    # 2. Detect Chinese Content (Simplified & Traditional)
+    # Using a broader range \u4e00-\u9fff and source hints
+    elif re.search(r'[\u4e00-\u9fff]', text) or (source and source.lower() in ['youtube', 'bahamut', 'discord', 'baidutieba']):
+        words = list(jieba.cut(text))
+        
+    # 3. Primarily International / English
+    else:
+        # Regex for words
+        raw_words = re.findall(r'\b[a-z]{2,}\b', text)
+        if HAS_SPECIALIZED:
+            # Lemmatize English words
+            words = [lemmatizer.lemmatize(w) for w in raw_words]
+        else:
+            words = raw_words
+
+    # 4. Global Filtering
+    if stopwords:
+        # Keep single characters if they are Chinese (very important for sentiment like '贵', '卡', '坑')
+        return [w.strip() for w in words if (len(w.strip()) > 1 or re.search(r'[\u4e00-\u9fa5]', w)) and w.strip() not in stopwords and not re.match(r'^[0-9.]+$', w)]
+    return [w.strip() for w in words if (len(w.strip()) > 1 or re.search(r'[\u4e00-\u9fa5]', w)) and not re.match(r'^[0-9.]+$', w)]
+
 
 def load_stopwords():
     stop_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'stopwords.txt')
@@ -146,9 +219,9 @@ if not check_password():
 def render_hero(title, subtitle="Sentiment Analysis System"):
     st.markdown(f"""
         <div class="hero-box">
-            <h1 style="margin: 0; font-size: 2.5em; letter-spacing: 0.05em;">{title}</h1>
-            <div style="height: 1px; background: #ECEAE4; width: 100px; margin: 15px 0;"></div>
-            <p style="color: #666; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.1em;">{subtitle}</p>
+            <h1 style="margin: 0; font-size: 2.4em; letter-spacing: 0.05em; font-family: 'Noto Serif JP', serif;">{title}</h1>
+            <div style="height: 2px; background: #9F353A; width: 60px; margin: 20px 0;"></div>
+            <p style="color: #666; font-size: 1em; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500;">{subtitle}</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -159,68 +232,110 @@ JP_COLORS = ["#165E83", "#9F353A", "#D0AF4C", "#1B4D3E", "#70649A", "#B14B28"]
 # Custom CSS
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&family=Noto+Sans+SC:wght@400;500;700&family=Inter:wght@400;600&display=swap');
     
-    .main {
-        background-color: #F9F7F2; /* Soft off-white / Washi paper feel */
-        color: #2D2D2D;
-        font-family: 'Inter', 'Noto Sans JP', sans-serif;
-    }
-    
-    h1, h2, h3 {
-        font-family: 'Noto Serif JP', serif;
-        color: #1A1A1A;
-        font-weight: 700 !important;
-    }
-    
-    .stMetric {
-        background-color: #ffffff;
-        padding: 20px;
-        border: 1px solid #ECEAE4;
-        border-radius: 4px; /* Sharper, more minimalist */
-        box-shadow: none;
-    }
-    
-    .stSidebar {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid #ECEAE4;
-    }
-    
-    .hero-box {
-        background: #FFFFFF;
-        padding: 20px;
-        border-left: 5px solid #9F353A; /* Enji - traditional crimson accent */
-        margin-bottom: 30px;
-        border-radius: 2px;
+    :root {
+        --header-font: 'Noto Serif JP', 'Noto Sans SC', serif;
+        --body-font: 'Inter', 'Noto Sans SC', sans-serif;
+        --accent-color: #9F353A;
     }
 
-    /* Existing App Specific Styles */
-    .feedback-box {
-        border-left: 4px solid #ddd;
-        padding: 10px;
-        margin: 5px 0;
-        background-color: #ffffff; /* Changed to white to match new theme */
-        color: #333;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Slight shadow for depth */
+    .main {
+        background-color: #F9F7F2;
+        color: #2D2D2D;
+        font-family: var(--body-font);
     }
-    .feedback-pos { border-left-color: #2ecc71; }
-    .feedback-neg { border-left-color: #e74c3c; }
+    
+    /* Standardized Header Styles */
+    h1 {
+        font-family: var(--header-font) !important;
+        font-size: 2.2rem !important;
+        color: #1A1A1A !important;
+        font-weight: 700 !important;
+        margin-bottom: 0.5rem !important;
+        letter-spacing: -0.02em !important;
+    }
+    
+    h2 {
+        font-family: var(--header-font) !important;
+        font-size: 1.6rem !important;
+        color: #333 !important;
+        border-bottom: 2px solid #E0DED7;
+        padding-bottom: 8px;
+        margin-top: 2rem !important;
+        margin-bottom: 1.2rem !important;
+    }
+    
+    h3 {
+        font-family: var(--header-font) !important;
+        font-size: 1.25rem !important;
+        color: var(--accent-color) !important;
+        margin-top: 1.5rem !important;
+        margin-bottom: 0.8rem !important;
+    }
+
+    .stMetric label {
+        font-family: var(--body-font) !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #666;
+    }
+    
+    .stMetric [data-testid="stMetricValue"] {
+        font-family: var(--header-font) !important;
+        font-size: 1.8rem !important;
+    }
+
+    .hero-box {
+        background: #FFFFFF;
+        padding: 30px;
+        border-left: 6px solid var(--accent-color);
+        margin-bottom: 40px;
+        border-radius: 4px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Chart improvement - no border */
+    .plot-container {
+        border: none;
+        background: transparent;
+        padding: 0;
+    }
+
+    /* Feedback Box Styles */
+    .feedback-box {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        border: 1px solid #EAE6DF;
+        transition: all 0.2s ease;
+        background: #FFFFFF;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    }
+    .feedback-box:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: translateY(-1px);
+    }
+    .feedback-pos {
+        border-left: 5px solid #2ecc71;
+    }
+    .feedback-neg {
+        border-left: 5px solid #e74c3c;
+    }
     .mode-tag {
         display: inline-block;
         padding: 2px 8px;
-        margin: 2px;
-        border-radius: 12px;
+        background: #f0f0f0;
+        border-radius: 4px;
         font-size: 0.75rem;
-        font-weight: bold;
-        background-color: #e0f2fe;
-        color: #0369a1;
-        border: 1px solid #bae6fd;
-    }
-    .feedback-box:hover {
-        background-color: #f8f9fa;
-        cursor: help;
-        border-left-width: 6px;
-        transition: all 0.2s;
+        color: #555;
+        margin-right: 8px;
+        font-weight: 600;
+        vertical-align: middle;
+        border: 1px solid #ddd;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -263,7 +378,7 @@ with st.sidebar:
     st.markdown("---")
     
     # Navigation (Top Priority)
-    menu = st.radio("导航", ["📊 总览大屏", "📚 漫画 IP 大盘", "🦸 英雄专项", "⚙️ 玩法反馈", "🔎 评论探索", "📄 分析月报", "🔧 配置管理"], index=0)
+    menu = st.radio("导航", ["📊 总览大屏", "🧭 语义透视与搜索", "📚 漫画 IP 大盘", "🦸 英雄专项", "⚙️ 玩法反馈", "📄 分析月报", "🔧 配置管理"], index=0)
     st.markdown("---")
     
     # Load Data for Sidebar Filters
@@ -284,6 +399,9 @@ with st.sidebar:
     if "taptap_intl" in selected_sources:
         pass
 
+    st.markdown("---")
+    # Removed Download CSV/XLSX section as requested due to performance lag
+
 # Filter by Source
 if not df.empty and 'source' in df.columns and selected_sources:
     df = df[df['source'].isin(selected_sources)]
@@ -298,7 +416,6 @@ if not df.empty and 'review_date' in df.columns:
     df = df.loc[mask]
 
 
-@st.cache_data(ttl=300)
 @st.cache_data(ttl=300)
 def load_hero_ip_map(game_key):
     """Load mapping of Hero Code -> IP Group Name and Display Name based on heroes.json"""
@@ -392,8 +509,16 @@ if menu == "📊 总览大屏":
                 counts = df['sentiment_label'].value_counts().reset_index()
                 counts.columns = ['Label', 'Count']
                 fig = px.pie(counts, values='Count', names='Label', color='Label',
+                             title='玩家情感构成分布',
                              color_discrete_map={'Positive':'#2ecc71', 'Negative':'#e74c3c', 'Neutral':'#95a5a6'})
-                fig.update_layout(font_family="Inter", title_font_family="Noto Serif JP")
+                fig.update_layout(
+                    height=350,
+                    font_family="Inter", 
+                    title_font=dict(size=18, family="Noto Serif JP", color="#1A1A1A"),
+                    margin=dict(t=60, b=20, l=40, r=40),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)'
+                )
                 st.plotly_chart(fig, use_container_width=True)
         
         with c2:
@@ -403,14 +528,18 @@ if menu == "📊 总览大屏":
                 rc.columns = ['Star', 'Count']
                 rc['Star'] = rc['Star'].replace({0: '期待/0星'})
                 fig_star = px.bar(rc, x='Star', y='Count', 
+                                 title='App Store / TapTap 评分分布',
                                  template="plotly_white")
                 fig_star.update_traces(marker_color=JP_COLORS[0], marker_line_color='#bcaf9f', marker_line_width=1)
                 fig_star.update_layout(
-                    height=300,
-                    font_family="Inter", title_font_family="Noto Serif JP",
-                    margin=dict(t=20, b=20, l=20, r=20),
-                    xaxis=dict(title=None),
-                    yaxis=dict(title=None)
+                    height=350,
+                    font_family="Inter", 
+                    title_font=dict(size=18, family="Noto Serif JP", color="#1A1A1A"),
+                    margin=dict(t=60, b=20, l=40, r=40),
+                    xaxis=dict(title=None, showgrid=False),
+                    yaxis=dict(title=None, gridcolor="#EEE"),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)'
                 )
                 st.plotly_chart(fig_star, use_container_width=True)
 
@@ -453,12 +582,13 @@ if menu == "📊 总览大屏":
             fig_trend = add_events_to_fig(fig_trend, events, start_date, end_date)
             
             fig_trend.update_layout(
+                title="舆情趋势与关键事件关联分析",
                 height=350,
                 template='plotly_white',
                 font_family="Inter", title_font_family="Noto Serif JP",
                 hovermode='x unified',
                 margin=dict(t=30, b=20),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
                 yaxis=dict(title='评论数', side='left', showgrid=False),
                 yaxis2=dict(title='情感分', side='right', overlaying='y', range=[0, 1], showgrid=True, gridcolor="#f0f0f0"),
                 xaxis=dict(title=None, showgrid=False)
@@ -616,14 +746,15 @@ if menu == "📊 总览大屏":
                                     barmode='stack',
                                     template="plotly_white",
                                     color_discrete_sequence=JP_COLORS,
-                                    labels={'date': '日期', 'mentions': '提及次', 'topic': '话题'})
+                                    labels={'date': '日期', 'mentions': '提及次数', 'topic': '关注维度'})
                     fig_bar.update_layout(
+                        title="核心话题热度演进 (双轴关联事件)",
                         height=400,
                         font_family="Inter", title_font_family="Noto Serif JP",
                         margin=dict(t=10, b=0, l=0, r=0),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                         xaxis=dict(title=None),
-                        yaxis=dict(title="提及频次")
+                        yaxis=dict(title="提及次数")
                     )
                     
                     # Add Events to Topic Evolution
@@ -657,9 +788,11 @@ if menu == "📊 总览大屏":
                 
                 def get_word_freq(dataframe):
                     all_words = []
-                    for txt in dataframe['content'].dropna():
-                        # Filter: only Chinese/English words, length > 1
-                        words = [w for w in jieba.cut(str(txt)) if len(w) > 1 and w not in stopwords and not re.match(r'^[0-9.]+$', w)]
+                    for _, row in dataframe.iterrows():
+                        txt = row['content']
+                        src = row.get('source', '').lower()
+                        # Use smart_tokenize with source context
+                        words = smart_tokenize(txt, source=src, stopwords=stopwords)
                         all_words.extend(words)
                     counts = Counter(all_words)
                     total = sum(counts.values())
@@ -749,7 +882,11 @@ if menu == "📊 总览大屏":
                                        title=f"'{selected_kw}' 近期搜索热度 (100为峰值)",
                                        color_discrete_sequence=JP_COLORS,
                                        labels={'interest_score': '搜索热度', 'date': '日期', 'region_name': '地区'})
-                    fig_trend.update_layout(font_family="Inter", title_font_family="Noto Serif JP")
+                    fig_trend.update_layout(
+                        font_family="Inter", 
+                        title_font_family="Noto Serif JP",
+                        legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02)
+                    )
                     st.plotly_chart(fig_trend, use_container_width=True)
                 else:
                     st.info("📊 市场趋势数据库暂无数据，请运行 google_trends.py 抓取。")
@@ -757,6 +894,132 @@ if menu == "📊 总览大屏":
                 st.error(f"趋势数据加载失败: {trend_e}")
         else:
             st.info("💡 尚未创建市场趋势数据库。")
+
+elif menu == "🧭 语义透视与搜索":
+    render_hero("Semantic Panorama", "语义透视与评论搜索")
+    
+    tab1, tab2 = st.tabs(["🗺️ 语义分布图", "🔍 全语境搜索"])
+    
+    with tab1:
+        st.markdown("""
+        💡 **如何阅读此图？**
+        - 每一个点代表一条玩家评论。位置越接近的点，语义越相似。
+        - 不同的颜色代表大模型自动识别出的 **“隐藏话题”**。
+        - **悬停** 鼠标可预览具体评论内容。
+        """)
+        
+        if df.empty or 'x' not in df.columns or df['x'].isnull().all():
+            st.warning("📊 语义地图暂未生成。")
+            st.info("请确保已在 `.env` 配置 `GEMINI_API_KEY` 并运行 `python scripts/process_semantic.py` 以进行向量化处理。")
+        else:
+            # Filter for data that has coordinates
+            map_df = df.dropna(subset=['x', 'y', 'cluster_label'])
+            
+            if map_df.empty:
+                st.info("尚未进行向量化分析，请运行后台脚本。")
+            else:
+                # 0. Pre-clean labels for display
+                def clean_label_display(l):
+                    if not isinstance(l, str): return l
+                    l = re.sub(r'\(.*?\)', '', l) # Remove (Pinyin)
+                    l = re.sub(r'（.*?）', '', l) # Remove (括号内容)
+                    return l.replace('****', '').strip()
+                
+                map_df['cluster_label'] = map_df['cluster_label'].apply(clean_label_display)
+
+                # 1. Map rendering (Full Width)
+                fig_map = px.scatter(
+                    map_df, x='x', y='y',
+                    color='cluster_label',
+                    hover_data={'content': True, 'x': False, 'y': False, 'cluster_label': False},
+                    title="全量舆情语义分布图",
+                    template="plotly_white",
+                    color_discrete_sequence=px.colors.qualitative.Prism,
+                    height=650
+                )
+                
+                fig_map.update_traces(marker=dict(size=8, opacity=0.7, line=dict(width=1, color='White')))
+                fig_map.update_layout(
+                    font_family="Inter", 
+                    title_font_family="Noto Serif JP",
+                    showlegend=True,
+                    legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02, title="话题分类"),
+                    xaxis=dict(showgrid=False, showticklabels=False, title=""),
+                    yaxis=dict(showgrid=False, showticklabels=False, title=""),
+                    margin=dict(l=0, r=0, t=40, b=0)
+                )
+                st.plotly_chart(fig_map, use_container_width=True)
+                
+                # 2. Stats and search rendering (Below the map)
+                st.markdown("---")
+                st.subheader("📋 话题分布详情")
+                cluster_stats = map_df.groupby('cluster_label').size().reset_index(name='count')
+                cluster_stats = cluster_stats.sort_values('count', ascending=False)
+                
+                st.dataframe(
+                    cluster_stats,
+                    column_config={
+                        "cluster_label": "核心话题名",
+                        "count": st.column_config.NumberColumn("覆盖评论数", format="%d 💬")
+                    },
+                    hide_index=True,
+                    use_container_width=True
+                )
+
+    with tab2:
+        if not df.empty:
+            search_col, sort_col = st.columns([3, 1])
+            with search_col:
+                search = st.text_input("输入关键词搜索（支持正则）", placeholder="例如: 延迟|卡顿")
+                st.caption("💡 **搜索提示**：系统暂不支持简繁体自动转换。若需搜索港澳台/海外评论，请确保关键词与原文文字格式（简/繁）一致。")
+            with sort_col:
+                sort_order = st.selectbox("排序方式", ["时间倒序", "时间正序", "评分从低到高", "评分从高到低"])
+            
+            filtered_df = df
+            if search:
+                filtered_df = df[df['content'].str.contains(search, na=False, case=False, regex=True)]
+            
+            # Sort logic
+            if sort_order == "时间倒序":
+                filtered_df = filtered_df.sort_values('review_date', ascending=False)
+            elif sort_order == "时间正序":
+                filtered_df = filtered_df.sort_values('review_date', ascending=True)
+            elif sort_order == "评分从低到高":
+                filtered_df = filtered_df.sort_values('rating', ascending=True)
+            elif sort_order == "评分从高到低":
+                filtered_df = filtered_df.sort_values('rating', ascending=False)
+
+            st.write(f"🔍 找到 {len(filtered_df)} 条匹配评论")
+            st.markdown("---")
+            
+            # Pagination for search results to avoid lag
+            items_per_page = 20
+            num_pages = (len(filtered_df) // items_per_page) + 1 if len(filtered_df) > 0 else 1
+            if num_pages > 1:
+                page = st.number_input("页码", min_value=1, max_value=num_pages, step=1)
+            else:
+                page = 1
+            
+            start_idx = (page - 1) * items_per_page
+            end_idx = start_idx + items_per_page
+            
+            for idx, row in filtered_df.iloc[start_idx:end_idx].iterrows():
+                source_badge = f"**[{row.get('source', 'Unknown')}]**"
+                date_display = str(row.get('review_date', '')).split(' ')[0]
+                rating_val = row.get('rating', 0)
+                rating_stars = "⭐" * int(rating_val) if pd.notna(rating_val) and rating_val > 0 else "无评分"
+                
+                st.markdown(f"{source_badge} **{row.get('author','Unknown')}** {rating_stars} | {date_display}")
+                
+                # Content Info
+                c_title = row.get('content_title', '')
+                c_url = row.get('content_url', '')
+                
+                if c_title:
+                    st.markdown(f"📺 *来源*: [{c_title}]({c_url})")
+                    
+                st.info(row.get('content'))
+                st.markdown("---")
 
 elif menu == "📚 漫画 IP 大盘":
     render_hero("Manga IP Analysis", "IP 势力与角色热度分析")
@@ -799,6 +1062,9 @@ elif menu == "📚 漫画 IP 大盘":
                                 color_discrete_sequence=JP_COLORS,
                                 template="plotly_white")
              fig_ip.update_traces(textposition='top center')
+             fig_ip.update_layout(
+                 legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02)
+             )
              st.plotly_chart(fig_ip, use_container_width=True)
              
         with col2:
@@ -886,12 +1152,23 @@ elif menu == "📚 漫画 IP 大盘":
                 yaxis_title='提及次数',
                 template='plotly_white',
                 height=500,
-                xaxis_tickangle=-45
+                xaxis_tickangle=-45,
+                legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02)
             )
             st.plotly_chart(fig_stack, use_container_width=True)
             
             with st.expander("查看详细数据表"):
-                st.dataframe(stack_df, use_container_width=True)
+                st.dataframe(
+                    stack_df,
+                    column_config={
+                        "hero": "角色名称",
+                        "Total": st.column_config.NumberColumn("提及总数"),
+                        "Positive": st.column_config.NumberColumn("正面反馈"),
+                        "Neutral": st.column_config.NumberColumn("中性反馈"),
+                        "Negative": st.column_config.NumberColumn("负面反馈")
+                    },
+                    use_container_width=True
+                )
             
         else:
             st.info(f"当前筛选条件下暂无角色数据")
@@ -1073,8 +1350,7 @@ elif menu == "🦸 英雄专项":
                                 ),
                                 yaxis=dict(title='热度', showgrid=False),
                                 yaxis2=dict(title='情感', overlaying='y', side='right', range=[0, 1], showgrid=True),
-                                font_family="Inter", title_font_family="Noto Serif JP",
-                                hovermode='x unified',
+                                legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
                                 height=350,
                                 template='plotly_white'
                             )
@@ -1150,8 +1426,10 @@ elif menu == "🦸 英雄专项":
                             stopwords = load_stopwords()
                             # 1. Tokenize and clean
                             tokenized_docs = []
-                            for txt in hero_texts:
-                                words = [w for w in jieba.cut(txt) if len(w) > 1 and w not in stopwords and not re.match(r'^[0-9.]+$', w)]
+                            for idx, row in enumerate(hero_texts):
+                                # Since hero_texts is a list, we might not have 'source' easily here
+                                # But we can pass the source if we change how hero_texts is collected
+                                words = smart_tokenize(row, stopwords=stopwords)
                                 if words: tokenized_docs.append(list(set(words))) # Unique words per sentence
                             
                             # 2. Count Co-occurrences
@@ -1270,29 +1548,6 @@ elif menu == "⚙️ 玩法反馈":
                              st.markdown(f'<div class="feedback-box feedback-neg" title="{tooltip}">{tag_html}{html.escape(x["text"])}</div>', unsafe_allow_html=True)
 
 
-elif menu == "🔎 评论探索":
-    render_hero("Comment Explorer", "评论探索")
-    if not df.empty:
-        search = st.text_input("搜索内容")
-        filtered_df = df
-        if search:
-            filtered_df = df[df['content'].str.contains(search, na=False, case=False)]
-        
-        st.write(f"共 {len(filtered_df)} 条")
-        for idx, row in filtered_df.head(20).iterrows():
-            source_badge = f"**[{row.get('source', 'Unknown')}]**"
-            date_display = str(row.get('review_date', '')).split(' ')[0]
-            st.markdown(f"{source_badge} **{row.get('author','Unknown')}** | {date_display}")
-            
-            # Content Info
-            c_title = row.get('content_title', '')
-            c_url = row.get('content_url', '')
-            
-            if c_title:
-                st.markdown(f"📺 *Source*: [{c_title}]({c_url})")
-                
-            st.write(row.get('content'))
-            st.markdown("---")
 
 elif menu == "📄 分析月报":
     render_hero("Monthly Analysis Report", "舆情分析月报")

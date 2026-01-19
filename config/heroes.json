@@ -506,6 +506,61 @@
                     "Abel"
                 ]
             },
+            "Demon Slayer (鬼灭之刃)": {
+                "Tanjiro": [
+                    "灶门炭治郎",
+                    "竈門炭治郎",
+                    "炭治郎",
+                    "Tanjiro Kamado",
+                    "Tanjiro"
+                ],
+                "Nezuko": [
+                    "灶门祢豆子",
+                    "竈門禰豆子",
+                    "祢豆子",
+                    "禰豆子",
+                    "Nezuko Kamado",
+                    "Nezuko"
+                ],
+                "Zenitsu": [
+                    "我妻善逸",
+                    "善逸",
+                    "Zenitsu Agatsuma",
+                    "Zenitsu"
+                ],
+                "Inosuke": [
+                    "嘴平伊之助",
+                    "伊之助",
+                    "Inosuke Hashibira",
+                    "Inosuke"
+                ],
+                "Giyu": [
+                    "富冈义勇",
+                    "富岡義勇",
+                    "义勇",
+                    "義勇",
+                    "水柱",
+                    "Giyu Tomioka",
+                    "Giyu"
+                ],
+                "Shinobu": [
+                    "蝴蝶忍",
+                    "胡蝶忍",
+                    "虫柱",
+                    "Shinobu Kocho",
+                    "Shinobu"
+                ],
+                "Rengoku": [
+                    "炼狱杏寿郎",
+                    "煉獄杏壽郎",
+                    "杏寿郎",
+                    "杏壽郎",
+                    "炎柱",
+                    "大哥",
+                    "Kyojuro Rengoku",
+                    "Rengoku"
+                ]
+            },
             "Undead Unluck (不死不運)": {
                 "Andy": [
                     "安迪",

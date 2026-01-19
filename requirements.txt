@@ -9,3 +9,6 @@ plotly
 wordcloud
 jieba
 python-dotenv
+xlsxwriter
+pythainlp
+nltk

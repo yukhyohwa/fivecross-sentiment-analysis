@@ -142,13 +142,38 @@ def generate_report():
     report += ", ".join([f"{word}({count})" for word, count in word_freq])
     report += "\n\n"
 
-    report += "## 六、 典型负面反馈摘选\n"
+    # Semantic Clustering Analysis
+    if 'cluster_label' in df.columns:
+        report += "## 六、 AI 语义聚类分析 (Semantic Clustering)\n"
+        # Clean labels
+        def clean_label(l):
+            if not isinstance(l, str): return None
+            l = re.sub(r'\(.*?\)', '', l)
+            l = re.sub(r'（.*?）', '', l)
+            l = l.replace('****', '').strip()
+            return l if l else None
+
+        clean_clusters = df['cluster_label'].apply(clean_label).dropna()
+        if not clean_clusters.empty:
+            cluster_counts = clean_clusters.value_counts().head(15)
+            
+            report += "| 核心话题 | 提及频次 | 占比 |\n"
+            report += "| :--- | :--- | :--- |\n"
+            for label, count in cluster_counts.items():
+                pct = (count / len(clean_clusters)) * 100
+                report += f"| {label} | {count} | {pct:.1f}% |\n"
+            report += "\n"
+        else:
+            report += "暂无聚类数据，请运行语义聚类脚本。\n\n"
+
+
+    report += "## 七、 典型负面反馈摘选\n"
     for i, content in enumerate(neg_reviews):
         # Truncate content if too long
         display_content = (content[:200] + '...') if len(content) > 200 else content
         report += f"{i+1}. {display_content}\n\n"
 
-    report += "## 七、 总结与建议\n"
+    report += "## 八、 总结与建议\n"
     
     # Simple logic-based summary
     if avg_sentiment < 0.4:

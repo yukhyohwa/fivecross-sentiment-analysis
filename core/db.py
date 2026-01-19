@@ -48,6 +48,16 @@ def migrate_db():
     except: pass
     try: c.execute("ALTER TABLE reviews ADD COLUMN content_url TEXT")
     except: pass
+    
+    # Semantic Map Columns
+    try: c.execute("ALTER TABLE reviews ADD COLUMN embedding BLOB")
+    except: pass
+    try: c.execute("ALTER TABLE reviews ADD COLUMN x REAL")
+    except: pass
+    try: c.execute("ALTER TABLE reviews ADD COLUMN y REAL")
+    except: pass
+    try: c.execute("ALTER TABLE reviews ADD COLUMN cluster_label TEXT")
+    except: pass
         
     conn.commit()
     conn.close()
