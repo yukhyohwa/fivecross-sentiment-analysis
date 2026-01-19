@@ -4,6 +4,7 @@ import json
 import os
 from core.crawlers.base import parse_date, save_review_helper
 
+
 BACKUP_FILE = "data/taptap_intl_backup.jsonl"
 
 def scrape_taptap_intl(page, url, cutoff_date, game_key):
@@ -22,7 +23,8 @@ def scrape_taptap_intl(page, url, cutoff_date, game_key):
     # Global/International Selectors
     container_sel = ".post-card"
     
-    print(f"  [{source}] Scrolling to reach cutoff date: {cutoff_date.strftime('%Y-%m-%d')}...")
+    print(f"[{source}] Scrolling to reach cutoff date: {cutoff_date.strftime('%Y-%m-%d')}...")
+
     
     while not reached_cutoff:
         page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
@@ -30,7 +32,7 @@ def scrape_taptap_intl(page, url, cutoff_date, game_key):
         
         review_elements = page.locator(container_sel).all()
         current_count = len(review_elements)
-        print(f"  [{source}] Found {current_count} reviews scrolling...")
+        print(f"[{source}] Found {current_count} reviews scrolling...")
         
         # Check the last items to see if we reached the cutoff date
         if current_count > 0:
@@ -47,20 +49,20 @@ def scrape_taptap_intl(page, url, cutoff_date, game_key):
                 
                 dt, _ = parse_date(date_text)
                 if dt and dt < cutoff_date:
-                    print(f"  [{source}] Reached cutoff date ({dt.strftime('%Y-%m-%d')}). Stopping scroll.")
+                    print(f"[{source}] Reached cutoff date ({dt.strftime('%Y-%m-%d')}). Stopping scroll.")
                     reached_cutoff = True
                     break
         
         if current_count == reviews_collected_on_page:
             no_change_count += 1
             if no_change_count > 10: # More patient for full crawl
-                print(f"  [{source}] No more reviews loading.")
+                print(f"[{source}] No more reviews loading (stuck).")
                 break
         else:
             no_change_count = 0
             reviews_collected_on_page = current_count
     
-    print(f"  [{source}] Starting to parse and save reviews...")
+    print(f"[{source}] Starting to parse and save reviews...")
     review_elements = page.locator(container_sel).all()
     
     count_saved = 0
@@ -120,4 +122,4 @@ def scrape_taptap_intl(page, url, cutoff_date, game_key):
                 # print(f"      [Error] {e}")
                 pass
                 
-    print(f"  [{source}] Crawl finished. Saved {count_saved} reviews to DB and {BACKUP_FILE}.")
+    print(f"[{source}] Crawl finished. Saved {count_saved} reviews to DB and {BACKUP_FILE}.")

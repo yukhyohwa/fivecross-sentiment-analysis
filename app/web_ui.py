@@ -1498,13 +1498,29 @@ elif menu == "⚙️ 玩法反馈":
         st.info("暂无数据")
     else:
         sys_data = {}
+        # Define keywords to filter out official posts
+        official_filter_keywords = [
+            "活动期间", "活动时间", "活动有效期", "贴吧专属福利", "截止至", 
+            "获得**奖励用户名单", "严禁讨论", "吧友参与活动", 
+            "加入玩家交流群", "宝贵反馈和建议", "盖楼送福利", "官方吧吧务组","衷心感谢大家"
+        ]
+
         for json_str in df['detailed_analysis'].dropna():
             try:
                 data = json.loads(json_str)
                 system = data.get("System", {})
                 for aspect, items in system.items():
                     if aspect not in sys_data: sys_data[aspect] = []
-                    sys_data[aspect].extend(items)
+                    
+                    # Filter items
+                    filtered_items = []
+                    for item in items:
+                        text_content = item.get('text', '')
+                        # Check if any official keyword is in the text
+                        if not any(kw in text_content for kw in official_filter_keywords):
+                            filtered_items.append(item)
+                            
+                    sys_data[aspect].extend(filtered_items)
             except:
                 pass
             
@@ -1513,7 +1529,9 @@ elif menu == "⚙️ 玩法反馈":
             "Matchmaking": "⚖️ Matchmaking", 
             "Network": "📡 Network", 
             "Optimization": "🚀 Optimization", 
-            "Welfare": "🎁 Welfare"
+            "Welfare": "🎁 Welfare",
+            "Gameplay": "🎮 Gameplay",
+            "Visuals": "🎨 Visuals"
         }
         tab_labels = [emoji_map.get(k, k) for k in sorted_keys]
 

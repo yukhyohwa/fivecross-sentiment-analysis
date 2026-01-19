@@ -2,6 +2,7 @@ import time
 import random
 import json
 import os
+import datetime
 from core.crawlers.base import parse_date, save_review_helper
 
 BACKUP_FILE = "data/taptap_cn_backup.jsonl"
@@ -67,11 +68,37 @@ def scrape_taptap_cn(page, url, cutoff_date, game_key):
                 if not author_el.count(): continue
                 author = author_el.inner_text().strip()
                 
-                content_el = el.locator("a[href*='/review/']").first
-                content = content_el.inner_text().strip() if content_el.count() else el.inner_text().strip()
+                # Content Extraction Strategy
+                # Priority 1: .review-item__text (Standard body)
+                content_el = el.locator(".review-item__text").first
+                
+                # Priority 2: Link to review (Old style / Summary)
+                if not content_el.count():
+                    content_el = el.locator("a[href*='/review/']").first
+                
+                if content_el.count():
+                    content = content_el.inner_text().strip()
+                else:
+                    # Fallback: Use full text but try to strip author
+                    full_text = el.inner_text().strip()
+                    if full_text.startswith(author):
+                        full_text = full_text[len(author):].strip()
+                    content = full_text
                 
                 raw_text = el.inner_text()
                 dt_obj, date_str = parse_date(raw_text)
+                
+                # If parse_date failed but we have data, try harder
+                if not dt_obj and "修改于" in raw_text:
+                     import re
+                     m = re.search(r'修改于\s*(\d{4}[/-]\d{1,2}[/-]\d{1,2})', raw_text)
+                     if m:
+                         ds = m.group(1).replace('/', '-')
+                         try:
+                             dt_obj = datetime.datetime.strptime(ds, '%Y-%m-%d')
+                             date_str = dt_obj.strftime('%Y-%m-%d')
+                         except: pass
+
                 if dt_obj and dt_obj < cutoff_date: continue
                 
                 # Improved Rating Parsing
@@ -106,7 +133,7 @@ def scrape_taptap_cn(page, url, cutoff_date, game_key):
                 }
                 f_backup.write(json.dumps(record, ensure_ascii=False) + "\n")
                 
-                save_review_helper(game_key, author, content, rating, date_str, source, original_date=raw_text)
+                save_review_helper(game_key, author, content, rating, date_str, source, original_date=date_str)
                 count_saved += 1
             except Exception as e:
                 pass

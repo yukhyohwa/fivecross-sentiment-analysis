@@ -13,6 +13,7 @@ from core.generate_sentiment_report import generate_report
 
 def run_web_ui():
     print("Starting Web UI...")
+
     # Use absolute path so it works from any directory
     base_dir = os.path.dirname(os.path.abspath(__file__))
     app_path = os.path.join(base_dir, "app", "web_ui.py")
@@ -27,7 +28,7 @@ def start_interactive_menu():
         print("4. Generate Analysis Report (Update Monthly Report)")
         print("5. Exit")
         
-        choice = input("\nEnter choice [1-4]: ").strip()
+        choice = input("\nEnter choice [1-5]: ").strip()
         
         if choice == '1':
             run_web_ui()
@@ -52,7 +53,7 @@ def start_interactive_menu():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sentiment Analysis Tool Entry Point")
-    parser.add_argument("mode", nargs="?", help="Mode: web, crawl, analyze")
+    parser.add_argument("mode", nargs="?", help="Mode: web, crawl, analyze, report")
     parser.add_argument("--game", default="jump_assemble", help="Game ID for crawl/analyze")
     parser.add_argument("--days", default=None, type=int, help="Days history for crawler (overrides settings)")
     parser.add_argument("--source", default=None, help="Filter crawler by source URL (e.g., 'bahamut', 'youtube')")
@@ -66,7 +67,7 @@ if __name__ == "__main__":
         run_crawler(args.game, days_back=args.days, source_filter=args.source)
     elif args.mode == "analyze":
         process_reviews(args.game, force=args.force)
-        print("\nUpdating monthly report...")
+        print("Updating monthly report...")
         generate_report()
     elif args.mode == "report":
         generate_report()

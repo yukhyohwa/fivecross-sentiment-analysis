@@ -87,6 +87,7 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
             except Exception as e:
                 print(f"Error processing URL {url}: {e}")
 
+
         browser.close()
 
 if __name__ == "__main__":
