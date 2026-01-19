@@ -39,8 +39,8 @@ def fetch_google_trends(keywords, regions=['TW', 'HK', 'MY', 'VN']):
         for region in regions:
             print(f"  [google_trends] Fetching for '{kw}' in {region}...")
             try:
-                # build_payload for last 3 months to see recent impact
-                pytrends.build_payload([kw], cat=0, timeframe='today 3-m', geo=region, gprop='')
+                # build_payload for last 12 months (1 year)
+                pytrends.build_payload([kw], cat=0, timeframe='today 12-m', geo=region, gprop='')
                 df = pytrends.interest_over_time()
                 
                 if not df.empty:

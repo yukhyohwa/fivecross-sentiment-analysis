@@ -858,9 +858,8 @@ if menu == "📊 总览大屏":
                 if not t_df.empty:
                     t_df['date'] = pd.to_datetime(t_df['date'])
                     
-                    # Filter for last 3 months (90 days)
-                    three_months_ago = pd.Timestamp.now() - pd.Timedelta(days=90)
-                    t_df = t_df[t_df['date'] >= three_months_ago]
+                    # Apply Global Date Filter
+                    t_df = t_df[(t_df['date'].dt.date >= start_date) & (t_df['date'].dt.date <= end_date)]
                     
                     # Region Mapping for better display
                     region_map = {
@@ -1509,11 +1508,20 @@ elif menu == "⚙️ 玩法反馈":
             except:
                 pass
             
-        tabs = st.tabs(sorted(sys_data.keys())) if sys_data else []
+        sorted_keys = sorted(sys_data.keys())
+        emoji_map = {
+            "Matchmaking": "⚖️ Matchmaking", 
+            "Network": "📡 Network", 
+            "Optimization": "🚀 Optimization", 
+            "Welfare": "🎁 Welfare"
+        }
+        tab_labels = [emoji_map.get(k, k) for k in sorted_keys]
+
+        tabs = st.tabs(tab_labels) if sys_data else []
         if not tabs:
             st.warning("暂无系统层面的反馈。")
         else:
-            for i, aspect in enumerate(sorted(sys_data.keys())):
+            for i, aspect in enumerate(sorted_keys):
                 with tabs[i]:
                     items = sys_data[aspect]
                     
