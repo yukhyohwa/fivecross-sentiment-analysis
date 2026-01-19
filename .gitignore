@@ -6,8 +6,8 @@ venv/
 
 output/
 logs/
+data/backups/
 
 # Streamlit
 .streamlit/
 .streamlit/secrets.toml
-data/*.jsonl
