@@ -946,10 +946,19 @@ elif menu == "🧭 评论搜索":
             # Pagination for search results to avoid lag
             items_per_page = 20
             num_pages = (len(filtered_df) // items_per_page) + 1 if len(filtered_df) > 0 else 1
-            if num_pages > 1:
-                page = st.number_input("页码", min_value=1, max_value=num_pages, step=1)
-            else:
-                page = 1
+            
+            # Persistent page state
+            if 'search_curr_page' not in st.session_state:
+                st.session_state.search_curr_page = 1
+                
+            # If search filters change, reset to page 1
+            filter_hash = hash(str(search) + str(sort_order))
+            if st.session_state.get('search_filter_hash') != filter_hash:
+                st.session_state.search_curr_page = 1
+                st.session_state.search_filter_hash = filter_hash
+
+            # Make sure we don't exceed total pages if filter changed
+            page = min(st.session_state.search_curr_page, num_pages)
             
             start_idx = (page - 1) * items_per_page
             end_idx = start_idx + items_per_page
@@ -968,25 +977,38 @@ elif menu == "🧭 评论搜索":
                 try: s_score = float(s_score)
                 except: s_score = 0.5
                 s_score = s_score if pd.notna(s_score) else 0.5
-                s_color = "#e74c3c" if s_score < 0.45 else ("#2ecc71" if s_score > 0.55 else "#95a5a6")
                 
-                label = row.get('sentiment_label', "Neutral")
-                if pd.isna(label): label = "Neutral"
+                # Sentiment styling
+                s_class = "feedback-pos" if s_score > 0.55 else ("feedback-neg" if s_score < 0.45 else "")
                 
-                c_title = row.get('content_title', '')
-                c_url = row.get('content_url', '')
-                title_html = f"<div style='margin-bottom: 5px;'><a href='{c_url}' target='_blank' style='color:#165E83;text-decoration:none;'>📺 <b>{c_title}</b></a></div>" if c_title else ""
-                
-                st.markdown(f"""
-                    <div style="border-left: 4px solid {s_color}; padding: 10px; background: white; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                        {title_html}
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #666; margin-bottom: 5px;">
-                            <span><b>{row.get('author','Unknown')}</b> ({source_badge}) {rating_stars}</span>
-                            <span>{date_display} | Label: {label}</span>
-                        </div>
-                        <div style="font-size: 0.95em;">{row.get('content', '')}</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                # IMPORTANT: DEDENT HTML STRING TO PREVENT ST.MARKDOWN FROM SHOWING CODE
+                card_html = f"""<div class="feedback-box {s_class}">
+    <div style="display: flex; justify-content: space-between; font-size: 0.82em; color: #7f8c8d; margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px;">
+        <div style="text-align: left;">
+            👤 <b>{html.escape(str(row.get('author','Unknown')))}</b> 
+            <span style="color:#95a5a6; margin-left:4px;">({html.escape(str(source_badge))})</span>
+            <span style="margin-left:8px;">{rating_stars}</span>
+        </div>
+        <div style="text-align: right;">
+            📅 {html.escape(str(date_display))}
+        </div>
+    </div>
+    <div style="font-size: 0.98rem; line-height: 1.6; color: #2c3e50; text-align: left;">
+        {html.escape(str(row.get('content', '')))}
+    </div>
+</div>"""
+                st.markdown(card_html, unsafe_allow_html=True)
+
+            # Move Pagination to bottom right
+            if num_pages > 1:
+                st.markdown("---")
+                p_c1, p_c2 = st.columns([4, 1])
+                with p_c2:
+                    current_page = st.session_state.get('search_curr_page', 1)
+                    new_page = st.number_input("跳转页码", min_value=1, max_value=num_pages, value=min(current_page, num_pages), step=1, key="search_pg_in")
+                    if new_page != current_page:
+                        st.session_state.search_curr_page = new_page
+                        st.rerun()
 
 elif menu == "📚 漫画专项":
     render_hero("Manga Specialty", "IP 势力与角色热度分析")

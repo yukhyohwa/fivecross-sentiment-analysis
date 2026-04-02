@@ -62,7 +62,7 @@ def update_embeddings_batch(batch_size=50):
         db_conn.close()
         return 0
 
-def run_semantic_clustering(n_clusters=20):
+def run_semantic_clustering(n_clusters=40):
     """Perform T-SNE reduction and Clustering. Increased clusters for better granularity."""
     
     # Fetch from both DBs
@@ -163,5 +163,5 @@ if __name__ == "__main__":
         print(f"Total embeddings updated so far: {total_updated}")
         time.sleep(2) # Small gap between batches
     
-    # 2. Run clustering with all available data
-    run_semantic_clustering()
+    # 2. Run clustering with all available data (increased granularity to 40)
+    run_semantic_clustering(n_clusters=40)
