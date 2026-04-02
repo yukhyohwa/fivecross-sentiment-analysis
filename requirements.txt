@@ -13,3 +13,7 @@ python-dotenv
 xlsxwriter
 pythainlp
 nltk
+google-genai
+scikit-learn
+numpy
+opencc
