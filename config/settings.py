@@ -8,15 +8,14 @@ load_dotenv()
 GAMES = {
     "jump_assemble": {
         "name": "漫画群星：大集结",
-        "crawl_days": 730, # Default 2 years
+        "crawl_days": 365, # Default 2 years
         "urls": [
             "https://www.taptap.cn/app/358933/review?os=android&sort=new",
-            "https://www.taptap.io/tw/app/33659119/review?sort=recent",
+            "https://www.taptap.io/post/7195977", # TapTap Intl Post
             "https://www.youtube.com/@jumpassembletc/videos",
             "https://m-apps.qoo-app.com/app-comment/31187?lang=current&sort=newest",
             "https://forum.gamer.com.tw/B.php?bsn=78752",    # Bahamut Forum
-            "https://discord.com/channels/1418135682026704918/1443083478202847232", # Discord
-            "https://tieba.baidu.com/f?kw=%C2%FE%BB%AD%C8%BA%D0%C7%B4%F3%BC%AF%BD%E1%B9%D9%B7%BD" # Baidu Tieba
+            "https://discord.com/channels/1418135682026704918/1443083478202847232" # Discord
         ],
         "keywords": {
             "孙悟空": "Goku", "悟空": "Goku", "贝吉塔": "Vegeta", "路飞": "Luffy", "索隆": "Zoro",
@@ -31,8 +30,6 @@ BAHAMUT_USER = os.getenv("BAHAMUT_USER", "guest")
 BAHAMUT_PASS = os.getenv("BAHAMUT_PASS", "")
 DISCORD_USER = os.getenv("DISCORD_USER", "")
 DISCORD_PASS = os.getenv("DISCORD_PASS", "")
-BAIDU_USER = os.getenv("BAIDU_USER", "")
-BAIDU_PASS = os.getenv("BAIDU_PASS", "")
 
 # --- Dynamic Config Loading ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -11,3 +11,7 @@ data/backups/
 # Streamlit
 .streamlit/
 .streamlit/secrets.toml
+
+# Data & Sessions
+data/sessions/
+data/discord/

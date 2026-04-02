@@ -1,10 +1,12 @@
 import os
+import re
 import datetime
 import hashlib
 import json
 import itertools
 import time
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,50 +24,66 @@ else:
 key_pool = itertools.cycle(API_KEYS) if API_KEYS else None
 current_key = next(key_pool) if key_pool else None
 
+# --- Active Client ---
+client = genai.Client(api_key=current_key) if current_key else None
+
 # --- Model Selection State ---
 last_successful_model = 'gemini-2.0-flash'
 last_model_failure_time = 0
 FAILURE_COOLDOWN = 300 # 5 minutes cooldown for a failing model
 
 def rotate_key():
-    """Switch to the next available API key."""
-    global current_key
+    """Switch to the next available API key and rebuild client."""
+    global current_key, client
     if key_pool:
         current_key = next(key_pool)
-        genai.configure(api_key=current_key)
+        client = genai.Client(api_key=current_key)
         print(f"--- Switched to API Key: {current_key[:8]}... ---")
         return True
     return False
 
-# Initial configuration
-if current_key:
-    genai.configure(api_key=current_key)
-
 def get_embeddings(texts):
-    """Fetch vector embeddings with auto-key rotation on failure."""
-    if not current_key or not texts: return None
+    """Fetch vector embeddings using the new google.genai SDK with auto-key rotation."""
+    if not client or not texts: return None
     
     # Filter out empty or non-string texts
     texts = [str(t) for t in texts if t and len(str(t).strip()) > 0]
     if not texts: return None
 
-    attempts = len(API_KEYS) if API_KEYS else 1
-    for _ in range(attempts):
-        try:
-            model = 'models/text-embedding-004'
-            result = genai.embed_content(model=model, content=texts, task_type="clustering")
-            return result['embedding']
-        except Exception as e:
-            err_msg = str(e)
-            if "429" in err_msg and rotate_key():
-                continue # Retry with new key
-            print(f"Gemini Embedding Error: {err_msg}")
-            return None
+    max_cycles = 4
+    for cycle in range(max_cycles):
+        attempts = len(API_KEYS) if API_KEYS else 1
+        for _ in range(attempts):
+            try:
+                result = client.models.embed_content(
+                    model='gemini-embedding-001',
+                    contents=texts,
+                    config=types.EmbedContentConfig(task_type="CLUSTERING")
+                )
+                # New SDK returns a list of ContentEmbedding objects
+                return [emb.values for emb in result.embeddings]
+            except Exception as e:
+                err_msg = str(e)
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                    print(f"Rate limited on get_embeddings. Rotating key...")
+                    if rotate_key():
+                        time.sleep(2)
+                        continue
+                else:
+                    print(f"Gemini Embedding Error: {err_msg}")
+                    if rotate_key(): continue
+                    return None
+                    
+        # All keys exhausted, sleep and try the next cycle
+        wait_m = [1, 2, 3][min(cycle, 2)]
+        print(f"--- All keys exhausted for embeddings. Waiting {wait_m}m... ---")
+        time.sleep(wait_m * 60)
+        
     return None
 
 def summarize_cluster(reviews):
-    """Use Gemini 2.0 to summarize reviews with local cache and persistent multi-key rotation."""
-    if not current_key or not reviews or len(reviews.strip()) < 5: 
+    """Use Gemini to summarize reviews with local cache and persistent multi-key rotation."""
+    if not client or not reviews or len(reviews.strip()) < 5: 
         return None
     
     content_hash = hashlib.md5(reviews.encode('utf-8')).hexdigest()
@@ -83,8 +101,6 @@ def summarize_cluster(reviews):
     # 2. API Call with persistent retries
     global last_successful_model, last_model_failure_time
     
-    # Cycles 1: Try gemini-2.0-flash (if not in cooldown)
-    # Cycles 2-4: Try gemini-flash-latest (1.5 Flash stable)
     max_cycles = 4
     for cycle in range(max_cycles):
         # Determine which model to try
@@ -92,20 +108,18 @@ def summarize_cluster(reviews):
             if last_successful_model == 'gemini-2.0-flash':
                 model_name = 'gemini-2.0-flash'
             else:
-                # If 2.0 failed before, check if cooldown is over
                 if time.time() - last_model_failure_time > FAILURE_COOLDOWN:
                      model_name = 'gemini-2.0-flash'
                 else:
-                     model_name = 'gemini-flash-latest' # Skip 2.0-flash
+                     model_name = 'gemini-2.0-flash-lite'
         else:
-            model_name = 'gemini-flash-latest'
+            model_name = 'gemini-2.0-flash-lite'
             
         attempts = len(API_KEYS) if API_KEYS else 1
         
         for _ in range(attempts):
             try:
                 print(f"--- Cycle {cycle+1}, Attempting summary with {model_name} (Key: {current_key[:8]}...) ---")
-                model = genai.GenerativeModel(model_name) 
                 
                 # Refined prompt for clean, symbolic labels without Pinyin
                 prompt = (
@@ -118,7 +132,10 @@ def summarize_cluster(reviews):
                     f"评论内容：\n{reviews[:2000]}"
                 )
                 
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
                 
                 if not response or not response.text:
                     raise Exception("Empty response from Gemini")
@@ -127,12 +144,10 @@ def summarize_cluster(reviews):
                 
                 # Post-process to ensure star injection if missing
                 if label and not label.startswith("****"):
-                    # Extra safety: Clean up any remaining Pinyin/Markdown if Gemini slips
-                    label = re.sub(r'\(.*?\)', '', label) # Remove common (pinyin) or (6字)
+                    label = re.sub(r'\(.*?\)', '', label)
                     label = f"**** {label.strip()} ****"
                 
                 if label:
-                    # Success!
                     last_successful_model = model_name
                     # Save to cache
                     cache_entry = {
@@ -147,10 +162,10 @@ def summarize_cluster(reviews):
                     
             except Exception as e:
                 err_msg = str(e)
-                if "429" in err_msg:
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
                     print(f"Rate limited (429) on {model_name}. Rotating...")
                     if model_name == 'gemini-2.0-flash':
-                        last_successful_model = 'gemini-flash-latest'
+                        last_successful_model = 'gemini-2.0-flash-lite'
                         last_model_failure_time = time.time()
                         
                     if rotate_key():

@@ -16,7 +16,7 @@ import io
 import itertools
 from collections import Counter
 
-from core.db import get_all_data, init_db
+from core.db import get_all_data, get_all_chats, init_db
 # These were unused in the UI and causing ImportErrors due to missing/moved functions
 # from core.analysis import analyze_sentiment, detailed_aspect_analysis
 
@@ -79,7 +79,7 @@ def smart_tokenize(text, source=None, stopwords=None):
             
     # 2. Detect Chinese Content (Simplified & Traditional)
     # Using a broader range \u4e00-\u9fff and source hints
-    elif re.search(r'[\u4e00-\u9fff]', text) or (source and source.lower() in ['youtube', 'bahamut', 'discord', 'baidutieba']):
+    elif re.search(r'[\u4e00-\u9fff]', text) or (source and source.lower() in ['youtube', 'bahamut', 'discord']):
         words = list(jieba.cut(text))
         
     # 3. Primarily International / English
@@ -346,7 +346,7 @@ def load_data(game_filter=None):
     df = get_all_data()
     if not df.empty:
         if 'review_date' in df.columns:
-            df['review_date'] = pd.to_datetime(df['review_date'], errors='coerce')
+            df['review_date'] = df['review_date'].apply(lambda x: pd.to_datetime(str(x), errors='coerce') if pd.notnull(x) else pd.NaT)
         if 'sentiment_score' in df.columns:
             df['sentiment_score'] = pd.to_numeric(df['sentiment_score'], errors='coerce')
         
@@ -378,7 +378,7 @@ with st.sidebar:
     st.markdown("---")
     
     # Navigation (Top Priority)
-    menu = st.radio("导航", ["📊 总览大屏", "🧭 语义透视与搜索", "📚 漫画 IP 大盘", "🦸 英雄专项", "⚙️ 玩法反馈", "📄 分析月报", "🔧 配置管理"], index=0)
+    menu = st.radio("导航", ["📊 总览大屏", "🧭 评论搜索", "📚 漫画专项", "🦸 英雄专项", "⚙️ 玩法反馈", "📄 分析月报", "🔧 配置管理"], index=0)
     st.markdown("---")
     
     # Load Data for Sidebar Filters
@@ -387,8 +387,8 @@ with st.sidebar:
     # Date Filter
     st.subheader("📅 时间筛选")
     today = pd.Timestamp.now().date()
-    # Default to last 1 year
-    start_date = st.date_input("开始日期", today - pd.Timedelta(days=365))
+    # Default to last 6 months
+    start_date = st.date_input("开始日期", today - pd.Timedelta(days=180))
     end_date = st.date_input("结束日期", today)
     
     # Source Filter
@@ -491,6 +491,7 @@ def process_trends(df, hero_ip_map):
             
     return pd.DataFrame(ip_records), pd.DataFrame(hero_records)
 
+
 if menu == "📊 总览大屏":
     render_hero(f"{selected_game_name} Overview", "舆情总览")
     if df.empty:
@@ -542,6 +543,8 @@ if menu == "📊 总览大屏":
                     plot_bgcolor='rgba(0,0,0,0)'
                 )
                 st.plotly_chart(fig_star, use_container_width=True)
+
+
 
         # 1.25 趋势关联分析 (Trend Analysis)
         st.markdown("---")
@@ -748,7 +751,7 @@ if menu == "📊 总览大屏":
                                     color_discrete_sequence=JP_COLORS,
                                     labels={'date': '日期', 'mentions': '提及次数', 'topic': '关注维度'})
                     fig_bar.update_layout(
-                        title="核心话题热度演进 (双轴关联事件)",
+                        title="核心话题热度演进",
                         height=400,
                         font_family="Inter", title_font_family="Noto Serif JP",
                         margin=dict(t=10, b=0, l=0, r=0),
@@ -768,7 +771,7 @@ if menu == "📊 总览大屏":
 
         # 1.6 关键词飙升榜 (Anomaly Detection)
         st.markdown("---")
-        st.subheader("🚀 热词飙升榜 (Anomaly Detection)")
+        st.subheader("🚀 热词飙升榜")
         st.caption("对比过去 7 天与更早 21 天，挖掘讨论热度增长最快的关键词")
 
         if not df.empty and 'content' in df.columns:
@@ -843,59 +846,8 @@ if menu == "📊 总览大屏":
                 st.info("数据量不足（需要至少 7 天以上的历史数据进行对比）。")
 
 
-
-        # 3. Google Trends / Market Heat
-        st.markdown("---")
-        st.subheader("🌍 市场热度趋势 (Google Trends)")
-        
-        TRENDS_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'market_trends.db')
-        if os.path.exists(TRENDS_DB):
-            try:
-                t_conn = sqlite3.connect(TRENDS_DB)
-                t_df = pd.read_sql_query("SELECT * FROM google_trends", t_conn)
-                t_conn.close()
-                
-                if not t_df.empty:
-                    t_df['date'] = pd.to_datetime(t_df['date'])
-                    
-                    # Apply Global Date Filter
-                    t_df = t_df[(t_df['date'].dt.date >= start_date) & (t_df['date'].dt.date <= end_date)]
-                    
-                    # Region Mapping for better display
-                    region_map = {
-                        'TW': '台湾', 'HK': '香港', 
-                        'US': '美国', 
-                        'TH': '泰国', 'JP': '日本'
-                    }
-
-                    t_df['region_name'] = t_df['region'].map(region_map)
-                    
-                    # Filtering options for Trends
-                    c1, c2 = st.columns([1, 3])
-                    with c1:
-                        selected_kw = st.selectbox("选择热度词", t_df['keyword'].unique())
-                    
-                    plot_df = t_df[t_df['keyword'] == selected_kw]
-                    
-                    fig_trend = px.line(plot_df, x='date', y='interest_score', color='region_name',
-                                       title=f"'{selected_kw}' 近期搜索热度 (100为峰值)",
-                                       color_discrete_sequence=JP_COLORS,
-                                       labels={'interest_score': '搜索热度', 'date': '日期', 'region_name': '地区'})
-                    fig_trend.update_layout(
-                        font_family="Inter", 
-                        title_font_family="Noto Serif JP",
-                        legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02)
-                    )
-                    st.plotly_chart(fig_trend, use_container_width=True)
-                else:
-                    st.info("📊 市场趋势数据库暂无数据，请运行 google_trends.py 抓取。")
-            except Exception as trend_e:
-                st.error(f"趋势数据加载失败: {trend_e}")
-        else:
-            st.info("💡 尚未创建市场趋势数据库。")
-
-elif menu == "🧭 语义透视与搜索":
-    render_hero("Semantic Panorama", "语义透视与评论搜索")
+elif menu == "🧭 评论搜索":
+    render_hero("Comment Search", "AI 聚类与全量评论搜索")
     
     tab1, tab2 = st.tabs(["🗺️ 语义分布图", "🔍 全语境搜索"])
     
@@ -1003,25 +955,41 @@ elif menu == "🧭 语义透视与搜索":
             end_idx = start_idx + items_per_page
             
             for idx, row in filtered_df.iloc[start_idx:end_idx].iterrows():
-                source_badge = f"**[{row.get('source', 'Unknown')}]**"
-                date_display = str(row.get('review_date', '')).split(' ')[0]
-                rating_val = row.get('rating', 0)
+                source_badge = row.get('source', 'Unknown')
+                date_display = str(row.get('review_date', ''))
+                
+                try:
+                    rating_val = float(row.get('rating', 0))
+                except:
+                    rating_val = 0
                 rating_stars = "⭐" * int(rating_val) if pd.notna(rating_val) and rating_val > 0 else "无评分"
                 
-                st.markdown(f"{source_badge} **{row.get('author','Unknown')}** {rating_stars} | {date_display}")
+                s_score = row.get('sentiment_score', 0.5)
+                try: s_score = float(s_score)
+                except: s_score = 0.5
+                s_score = s_score if pd.notna(s_score) else 0.5
+                s_color = "#e74c3c" if s_score < 0.45 else ("#2ecc71" if s_score > 0.55 else "#95a5a6")
                 
-                # Content Info
+                label = row.get('sentiment_label', "Neutral")
+                if pd.isna(label): label = "Neutral"
+                
                 c_title = row.get('content_title', '')
                 c_url = row.get('content_url', '')
+                title_html = f"<div style='margin-bottom: 5px;'><a href='{c_url}' target='_blank' style='color:#165E83;text-decoration:none;'>📺 <b>{c_title}</b></a></div>" if c_title else ""
                 
-                if c_title:
-                    st.markdown(f"📺 *来源*: [{c_title}]({c_url})")
-                    
-                st.info(row.get('content'))
-                st.markdown("---")
+                st.markdown(f"""
+                    <div style="border-left: 4px solid {s_color}; padding: 10px; background: white; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        {title_html}
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #666; margin-bottom: 5px;">
+                            <span><b>{row.get('author','Unknown')}</b> ({source_badge}) {rating_stars}</span>
+                            <span>{date_display} | Label: {label}</span>
+                        </div>
+                        <div style="font-size: 0.95em;">{row.get('content', '')}</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
-elif menu == "📚 漫画 IP 大盘":
-    render_hero("Manga IP Analysis", "IP 势力与角色热度分析")
+elif menu == "📚 漫画专项":
+    render_hero("Manga Specialty", "IP 势力与角色热度分析")
     
     # Load Hero/IP Mapping
     hero_ip_map, ip_hero_list, hero_display_map = load_hero_ip_map(selected_game_key)

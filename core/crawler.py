@@ -1,11 +1,12 @@
 import time
+import os
 from playwright.sync_api import sync_playwright
 from core.db import init_db
 from config.settings import GAMES
 import datetime
 
 # Import crawler modules
-from core.crawlers import scrape_taptap_cn, scrape_taptap_intl, scrape_youtube, scrape_qooapp, scrape_bahamut, scrape_discord, scrape_baidutieba
+from core.crawlers import scrape_taptap_cn, scrape_taptap_intl, scrape_youtube, scrape_qooapp, scrape_bahamut
 
 def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
     if game_key not in GAMES:
@@ -34,8 +35,7 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
             source_filter = "gamer.com.tw"
         elif source_filter.lower() == "discord":
             source_filter = "discord.com"
-        elif source_filter.lower() == "tieba":
-            source_filter = "tieba.baidu.com"
+
             
         print(f"Filter: Only scraping sources containing '{source_filter}'")
         target_urls = [u for u in target_urls if source_filter in u]
@@ -48,16 +48,28 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
     
     init_db()
     
+    # Path for session persistence
+    session_dir = "data/sessions"
+    os.makedirs(session_dir, exist_ok=True)
+    state_path = os.path.join(session_dir, "storage_state.json")
+    
     with sync_playwright() as p:
         # Launch with flags to reduce bot detection
         browser = p.chromium.launch(
             headless=False,
             args=['--disable-blink-features=AutomationControlled'] 
         )
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 800}
-        )
+        
+        # Load existing session if available
+        context_kwargs = {
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "viewport": {'width': 1280, 'height': 800}
+        }
+        if os.path.exists(state_path):
+            print(f"Loading existing session from {state_path}")
+            context_kwargs["storage_state"] = state_path
+            
+        context = browser.new_context(**context_kwargs)
         
         for url in target_urls:
             try:
@@ -76,9 +88,14 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
                 elif "forum.gamer.com.tw" in url:
                     scrape_bahamut(page, url, cutoff_date, game_key)
                 elif "discord.com" in url:
-                    scrape_discord(page, url, cutoff_date, game_key)
-                elif "tieba.baidu.com" in url:
-                    scrape_baidutieba(page, url, cutoff_date, game_key)
+                    # Redirected to local import logic
+                    print(f"  [discord] Redirecting {url} to local TXT import...")
+                    from core.utils.discord_helper import import_discord_files
+                    import_discord_files(game_id=game_key)
+                    # No page navigation needed for discord
+                    page.close()
+                    continue
+
                 else:
                     print(f"Unknown source for URL: {url}")
                 
@@ -87,7 +104,9 @@ def run_crawler(game_key="jump_assemble", days_back=None, source_filter=None):
             except Exception as e:
                 print(f"Error processing URL {url}: {e}")
 
-
+        # Save session for next time
+        print(f"Saving session to {state_path}...")
+        context.storage_state(path=state_path)
         browser.close()
 
 if __name__ == "__main__":

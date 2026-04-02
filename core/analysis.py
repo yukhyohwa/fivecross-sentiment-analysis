@@ -133,7 +133,7 @@ def load_hero_map(game_id):
                 for group_name, heroes in groups.items():
                     for hero_code, aliases in heroes.items():
                         for alias in aliases:
-                            hero_map[alias] = hero_code
+                            hero_map[alias.lower()] = hero_code
     except Exception as e:
         print(f"Error loading hero map: {e}")
         
@@ -155,8 +155,9 @@ def detailed_aspect_analysis(text, game_id="jump_assemble", metadata=None):
     
     for clause in clauses:
         found_heroes_in_clause = []
+        lower_clause = clause.lower()
         for h_alias, h_code in hero_map.items():
-            if h_alias in clause:
+            if h_alias in lower_clause:
                 if h_code not in found_heroes_in_clause:
                     found_heroes_in_clause.append(h_code)
         
@@ -234,33 +235,63 @@ def process_reviews(game_id=None, force=False):
     from core.db import init_db, get_reviews_for_analysis, update_analysis_results
     init_db() 
     rows = get_reviews_for_analysis(game_id, force)
+    if not rows:
+        print("No new reviews to analyze.")
+        return
     print(f"Analyzing {len(rows)} reviews...")
     for r in rows:
         rid, content, gid, source, date = r
         if not content: continue
         current_gid = gid if gid else (game_id if game_id else "jump_assemble")
         
-        metadata = {
-            "source": source,
-            "date": date,
-            "full_content": content
-        }
-        
-        official_authors = ["JUMP : 群星集結", "@JUMP : 群星集結"]
-        if len(r) > 2 and any(oa in str(r[2]) for oa in official_authors):
-            score, label = 0.5, "Neutral"
-        else:
-            score, label = analyze_sentiment(content)
-            
+        metadata = {"source": source, "date": date, "full_content": content}
+        score, label = analyze_sentiment(content)
         details_json = detailed_aspect_analysis(content, current_gid, metadata=metadata)
         
         # Extract identified heroes
+        char_mentions_str = None
         try:
             details = json.loads(details_json)
             heroes_found = list(details.get("Heroes", {}).keys())
-            char_mentions_str = ",".join(heroes_found) if heroes_found else None
-        except:
-            char_mentions_str = None
+            if heroes_found: char_mentions_str = ",".join(heroes_found)
+        except: pass
             
         update_analysis_results(rid, score, label, char_mentions_str, details_json)
-    print("Analysis complete.")
+    print("Review analysis complete.")
+
+def process_chats(game_id=None, force=False):
+    from core.db import init_db, get_chats_for_analysis, update_chat_analysis
+    init_db()
+    rows = get_chats_for_analysis(game_id, force)
+    if not rows:
+        print("No new chat messages to analyze.")
+        return
+    print(f"Analyzing {len(rows)} chat messages...")
+    for r in rows:
+        mid, content, gid, source, date = r
+        if not content: continue
+        current_gid = gid if gid else (game_id if game_id else "jump_assemble")
+        
+        # Additional cleaning for chats (commands, stickers)
+        if "使用export" in content or "🤖" in content:
+            # Mark as Neutral and skip heavy analysis
+            update_chat_analysis(mid, 0.5, "Neutral", None, "{}")
+            continue
+
+        metadata = {"source": source, "date": date, "full_content": content}
+        score, label = analyze_sentiment(content)
+        details_json = detailed_aspect_analysis(content, current_gid, metadata=metadata)
+        
+        char_mentions_str = None
+        try:
+            details = json.loads(details_json)
+            heroes_found = list(details.get("Heroes", {}).keys())
+            if heroes_found: char_mentions_str = ",".join(heroes_found)
+        except: pass
+            
+        update_chat_analysis(mid, score, label, char_mentions_str, details_json)
+    print("Chat analysis complete.")
+
+def run_all_analysis(game_id=None, force=False):
+    process_reviews(game_id, force)
+    process_chats(game_id, force)

@@ -6,14 +6,16 @@ import collections
 import jieba
 import os
 import re
+import datetime
 
 # Project root directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Database path
+# Database paths
 DB_PATH = os.path.join(BASE_DIR, 'data', 'jump_reviews.db')
+CHAT_DB_PATH = os.path.join(BASE_DIR, 'data', 'jump_chats.db')
+
 # Configuration: Default to the first day of the current month
-import datetime
 START_DATE = datetime.datetime.now().replace(day=1).strftime('%Y-%m-%d')
 END_DATE = None  # Set to None for "until now"
 
@@ -24,26 +26,54 @@ def load_stopwords():
             return set([line.strip() for line in f if line.strip()])
     return set()
 
-def generate_report():
-    if not os.path.exists(DB_PATH):
-        print(f"Error: Database not found at {DB_PATH}")
-        return
-
-    conn = sqlite3.connect(DB_PATH)
+def load_aggregate_data():
+    """Unify data from reviews and chat messages."""
     date_filter = f"review_date >= '{START_DATE}'"
     if END_DATE:
         date_filter += f" AND review_date <= '{END_DATE}'"
+        
+    # 1. Load Reviews
+    conn_r = sqlite3.connect(DB_PATH)
+    query_r = f"SELECT * FROM reviews WHERE {date_filter}"
+    df_r = pd.read_sql_query(query_r, conn_r)
+    conn_r.close()
     
-    query = f"SELECT * FROM reviews WHERE {date_filter}"
-    df = pd.read_sql_query(query, conn)
-    conn.close()
+    # 2. Load Chats
+    df_c = pd.DataFrame()
+    if os.path.exists(CHAT_DB_PATH):
+        conn_c = sqlite3.connect(CHAT_DB_PATH)
+        # For chats, the filter is on message_date
+        c_filter = f"message_date >= '{START_DATE}'"
+        if END_DATE:
+            c_filter += f" AND message_date <= '{END_DATE}'"
+        query_c = f"SELECT * FROM chat_messages WHERE {c_filter}"
+        try:
+            df_c = pd.read_sql_query(query_c, conn_c)
+            if not df_c.empty:
+                df_c = df_c.rename(columns={'message_date': 'review_date'})
+                df_c['rating'] = 0 # Default for chats
+        except: pass
+        conn_c.close()
+    
+    if df_r.empty and df_c.empty:
+        return pd.DataFrame()
+        
+    return pd.concat([df_r, df_c], ignore_index=True, sort=False)
+
+def generate_report():
+    df = load_aggregate_data()
 
     if df.empty:
         print(f"No data found after {START_DATE}")
         return
 
-    # Ensure date is datetime object
-    df['review_date'] = pd.to_datetime(df['review_date'])
+    # Ensure date is datetime object and handle parsing errors robustly
+    df['review_date'] = df['review_date'].apply(lambda x: pd.to_datetime(str(x), errors='coerce') if pd.notnull(x) else pd.NaT)
+    # Filter out records where date could not be parsed
+    original_count = len(df)
+    df = df.dropna(subset=['review_date'])
+    if len(df) < original_count:
+        print(f"  [report] Warning: Dropped {original_count - len(df)} records due to invalid date formats.")
 
     total_reviews = len(df)
     avg_sentiment = df['sentiment_score'].mean()
@@ -102,14 +132,14 @@ def generate_report():
 
     # Format the report
     start_date_str = START_DATE
-    end_date_str = df['review_date'].max().strftime('%Y-%m-%d') if 'review_date' in df.columns else '未知'
+    end_date_str = df['review_date'].max().strftime('%Y-%m-%d')
     
     report = f"# 《漫画群星：大集结》舆情监测报告 ({start_date_str} 至 {end_date_str})\n\n"
     report += f"**报告生成日期**: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}\n"
     report += f"**数据范围**: {start_date_str} 至 {end_date_str}\n\n"
 
     report += "## 一、 舆情概况\n"
-    report += f"- **总采集评论数**: {total_reviews} 条\n"
+    report += f"- **总采集评论数**: {total_reviews} 条 (包含公域评价与社群消息)\n"
     report += f"- **整体情感平均分**: {avg_sentiment:.2f} (0=极差, 1=极好)\n"
     report += f"- **情感分布**:\n"
     for label, count in sentiment_counts.items():
@@ -166,7 +196,6 @@ def generate_report():
         else:
             report += "暂无聚类数据，请运行语义聚类脚本。\n\n"
 
-
     report += "## 七、 典型负面反馈摘选\n"
     for i, content in enumerate(neg_reviews):
         # Truncate content if too long
@@ -174,8 +203,6 @@ def generate_report():
         report += f"{i+1}. {display_content}\n\n"
 
     report += "## 八、 总结与建议\n"
-    
-    # Simple logic-based summary
     if avg_sentiment < 0.4:
         report += "- **综述**: 近期舆情呈现高度负面，玩家不满情绪显著。\n"
     elif avg_sentiment < 0.6:
@@ -190,21 +217,19 @@ def generate_report():
     if aspect_feedback.get('Network', {}).get('neg', 0) > 5:
         report += "- **网络体验**: 网络延迟(460)问题是部分玩家的痛点。\n"
 
-    # Save report to a file in reports directory
+    # Save report
     reports_dir = os.path.join(BASE_DIR, 'reports')
     if not os.path.exists(reports_dir):
         os.makedirs(reports_dir)
         
-    # Generate filename based on date range or month
     month_suffix = pd.to_datetime(START_DATE).strftime('%Y%m')
-    output_path = os.path.join(reports_dir, f"public_opinion_report_{month_suffix}.md")
+    output_filename = f"public_opinion_report_{month_suffix}.md"
+    output_path = os.path.join(reports_dir, output_filename)
     
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(report)
     
     print(f"Report generated at: {output_path}")
-    print("--- REPORT PREVIEW ---")
-    print(report[:1000] + "...")
 
 if __name__ == "__main__":
     generate_report()

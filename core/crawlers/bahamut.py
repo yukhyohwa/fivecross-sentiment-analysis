@@ -11,10 +11,48 @@ from config.settings import BAHAMUT_USER, BAHAMUT_PASS
 BACKUP_FILE = "data/backups/bahamut_backup.jsonl"
 
 def login_bahamut(page: Page):
-    print("  [bahamut] Navigating to Login Page...")
+    print("  [bahamut] Checking login status...")
     try:
+        # First, try to visit a page that shows login status
+        page.goto("https://www.gamer.com.tw/")
+        time.sleep(2)
+        
+        # Stricter detection: 
+        # If we see "登入" (Login button), we are definitely NOT logged in.
+        # If we see "登出" (Logout link) or a specific member name, we ARE logged in.
+        is_guest = page.get_by_role("link", name="登入", exact=False).count() > 0
+        is_logged_in = page.locator("a[href*='logout.php']").count() > 0 or page.locator(".topbar-member-name").count() > 0
+        
+        if is_logged_in and not is_guest:
+            print("  [bahamut] Already logged in via session.")
+            return
+
+        print("  [bahamut] Not logged in. Navigating to Login Page...")
         page.goto("https://user.gamer.com.tw/login.php")
         
+        # If redirected away from login.php, we might be logged in
+        if "login.php" not in page.url:
+            print("  [bahamut] Redirected from login, session might be active.")
+            return
+
+        # --- AUTO-FILL ATTEMPT ---
+        try:
+            if BAHAMUT_USER and BAHAMUT_PASS and BAHAMUT_USER != "guest":
+                print(f"  [bahamut] Attempting to auto-fill credentials for {BAHAMUT_USER}...")
+                page.fill("input[name='userid']", BAHAMUT_USER, timeout=5000)
+                page.fill("input[name='password']", BAHAMUT_PASS, timeout=5000)
+                
+                # Wait a bit then click login button
+                time.sleep(1)
+                print("  [bahamut] Clicking Login button...")
+                page.click("a#btn-login") 
+                
+                # Note: If a Cloudflare challenge pops up after click, the loop below will wait
+            else:
+                print("  [bahamut] No credentials found in .env, skipping auto-fill.")
+        except Exception as e:
+             print(f"  [bahamut] Auto-fill/Click failed (might be behind captcha): {e}")
+
         print("  [bahamut] --- MANUAL LOGIN REQUIRED ---")
         print(f"  [bahamut] 1. Solve Cloudflare Captcha.")
         print(f"  [bahamut] 2. Login with {BAHAMUT_USER} / {'*' * len(BAHAMUT_PASS)}.")

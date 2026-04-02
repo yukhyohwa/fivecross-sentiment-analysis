@@ -12,54 +12,84 @@ from sklearn.cluster import KMeans
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.db import DB_NAME
+from core.db import DB_NAME, CHAT_DB_NAME
 from core.gemini_client import get_embeddings, summarize_cluster
 
 def update_embeddings_batch(batch_size=50):
     """Fetch missing embeddings from Gemini and store them. Batch size set to 50."""
+    
+    # Check Reviews DB first
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    
-    # Get reviews without embeddings but having content (not empty)
     c.execute("SELECT id, content FROM reviews WHERE embedding IS NULL AND content IS NOT NULL AND content != '' LIMIT ?", (batch_size,))
     rows = c.fetchall()
+    table_name = "reviews"
+    db_conn = conn
     
     if not rows:
-        print("No new reviews to embed.")
         conn.close()
-        return 0
+        # Fallback to check Chats DB
+        conn_c = sqlite3.connect(CHAT_DB_NAME)
+        c_c = conn_c.cursor()
+        c_c.execute("SELECT id, content FROM chat_messages WHERE embedding IS NULL AND content IS NOT NULL AND content != '' LIMIT ?", (batch_size,))
+        rows = c_c.fetchall()
+        table_name = "chat_messages"
+        db_conn = conn_c
+        c = c_c
+
+        if not rows:
+            print("No new data to embed in either database.")
+            conn_c.close()
+            return 0
     
     ids = [r[0] for r in rows]
     texts = [r[1][:500] for r in rows] # Limit text length for embedding
     
-    print(f"Fetching embeddings for {len(texts)} reviews...")
+    print(f"Fetching embeddings for {len(texts)} {table_name}...")
     embeddings = get_embeddings(texts)
     
     if embeddings:
         for rid, emb in zip(ids, embeddings):
             # Store as binary pickle for SQLite
             emb_blob = pickle.dumps(np.array(emb, dtype=np.float32))
-            c.execute("UPDATE reviews SET embedding = ? WHERE id = ?", (emb_blob, rid))
-        conn.commit()
-        print(f"Successfully updated {len(ids)} embeddings.")
-        conn.close()
+            c.execute(f"UPDATE {table_name} SET embedding = ? WHERE id = ?", (emb_blob, rid))
+        db_conn.commit()
+        print(f"Successfully updated {len(ids)} embeddings in {table_name}.")
+        db_conn.close()
         return len(ids)
     else:
         print("Failed to get embeddings. Check API Key or limits.")
-        conn.close()
+        db_conn.close()
         return 0
 
 def run_semantic_clustering(n_clusters=20):
     """Perform T-SNE reduction and Clustering. Increased clusters for better granularity."""
-    conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql_query("SELECT id, content, embedding FROM reviews WHERE embedding IS NOT NULL", conn)
+    
+    # Fetch from both DBs
+    conn_r = sqlite3.connect(DB_NAME)
+    df_r = pd.read_sql_query("SELECT id, content, embedding FROM reviews WHERE embedding IS NOT NULL", conn_r)
+    if not df_r.empty: df_r['is_review'] = True
+    
+    conn_c = sqlite3.connect(CHAT_DB_NAME)
+    df_c = pd.read_sql_query("SELECT id, content, embedding FROM chat_messages WHERE embedding IS NOT NULL", conn_c)
+    if not df_c.empty: df_c['is_review'] = False
+    
+    if df_r.empty and df_c.empty:
+        df = pd.DataFrame()
+    elif df_r.empty:
+        df = df_c
+    elif df_c.empty:
+        df = df_r
+    else:
+        df = pd.concat([df_r, df_c], ignore_index=True)
     
     if len(df) < n_clusters:
-        print(f"Not enough data for clustering (need at least {n_clusters} reviews).")
-        conn.close()
+        print(f"Not enough data for clustering (need at least {n_clusters} records).")
+        conn_r.close()
+        conn_c.close()
         return
 
-    print(f"Processing clustering for {len(df)} reviews...")
+    print(f"Processing clustering for {len(df)} records across both databases...")
     
     # 1. Unpickle embeddings
     X = np.array([pickle.loads(e) for e in df['embedding'].values])
@@ -91,33 +121,35 @@ def run_semantic_clustering(n_clusters=20):
         print(f"Summarizing Cluster {i} ({i+1}/{n_clusters})...")
         label = summarize_cluster(text_for_ai)
         
-        # Only update if we got a valid label (avoids overwriting with None/Unlabeled)
         if label:
             cluster_labels[i] = label
-            # Reduced delay as gemini_client now handles robust retry and fallback
             time.sleep(2) 
         else:
             print(f"Skipping Cluster {i} due to API failure/limit. Will retry later.")
     
     # 5. Update Database
     for _, row in df.iterrows():
-        c = conn.cursor()
+        is_rev = row.get('is_review', True)
+        c = conn_r.cursor() if is_rev else conn_c.cursor()
+        t_name = "reviews" if is_rev else "chat_messages"
+        
         # Only update cluster_label if we actually generated a new one
         if row['cluster'] in cluster_labels:
             c.execute(
-                "UPDATE reviews SET x = ?, y = ?, cluster_label = ? WHERE id = ?",
+                f"UPDATE {t_name} SET x = ?, y = ?, cluster_label = ? WHERE id = ?",
                 (float(row['x']), float(row['y']), cluster_labels[row['cluster']], row['id'])
             )
         else:
-            # Still update coordinates even if label failed, but keep old label
             c.execute(
-                "UPDATE reviews SET x = ?, y = ? WHERE id = ?",
+                f"UPDATE {t_name} SET x = ?, y = ? WHERE id = ?",
                 (float(row['x']), float(row['y']), row['id'])
             )
     
-    conn.commit()
-    conn.close()
-    print("Semantic map updated successfully!")
+    conn_r.commit()
+    conn_c.commit()
+    conn_r.close()
+    conn_c.close()
+    print("Semantic map updated successfully for both databases!")
 
 if __name__ == "__main__":
     # 1. Update missing embeddings (in batches until done)

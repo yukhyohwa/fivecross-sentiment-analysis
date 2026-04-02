@@ -7,7 +7,7 @@ import argparse
 # Ensure core modules can be imported
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from core.analysis import process_reviews
+from core.analysis import run_all_analysis
 from core.crawler import run_crawler
 from core.generate_sentiment_report import generate_report
 
@@ -24,7 +24,7 @@ def start_interactive_menu():
         print("\n=== FiveCross Sentiment Analysis CLI ===")
         print("1. Run Web UI (Visual Dashboard)")
         print("2. Run Crawler (Fetch new data)")
-        print("3. Run Analysis (Process NLP on existing data)")
+        print("3. Run Analysis (Process NLP on Reviews & Chats)")
         print("4. Generate Analysis Report (Update Monthly Report)")
         print("5. Exit")
         
@@ -40,7 +40,7 @@ def start_interactive_menu():
         elif choice == '3':
             print("\n--- Analysis ---")
             game_key = input("Enter game key [default: jump_assemble]: ").strip() or "jump_assemble"
-            process_reviews(game_key)
+            run_all_analysis(game_key)
         elif choice == '4':
             print("\n--- Generating Report ---")
             generate_report()
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     elif args.mode == "crawl":
         run_crawler(args.game, days_back=args.days, source_filter=args.source)
     elif args.mode == "analyze":
-        process_reviews(args.game, force=args.force)
+        run_all_analysis(args.game, force=args.force)
         print("Updating monthly report...")
         generate_report()
     elif args.mode == "report":
