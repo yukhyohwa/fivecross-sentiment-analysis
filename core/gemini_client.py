@@ -121,14 +121,13 @@ def summarize_cluster(reviews):
             try:
                 print(f"--- Cycle {cycle+1}, Attempting summary with {model_name} (Key: {current_key[:8]}...) ---")
                 
-                # Refined prompt for clean, symbolic labels without Pinyin
+                # Refined prompt for standardized labels
                 prompt = (
-                    f"请总结以下多条游戏评论，提取这组评论中最为核心、最具有代表性的**一个**话题(5-10字)。\n"
-                    f"要求：\n"
-                    f"1. **严禁输出列表**。即使内容多样，也必须提炼出一个最主要的统一话题。\n"
-                    f"2. 仅输出话题本身，不要有任何修饰词、解释、拼音、英文或注音。\n"
-                    f"3. 话题前后必须加上四个星号，格式如：**** 话题名称 ****\n"
-                    f"4. 不要包含字数说明或括号补充。\n\n"
+                    "你是一个游戏社区分析员。请从以下【标准标签集】中为这组公开评论提取一个最准确的**单一分类标签**：\n"
+                    "【标准标签集】：氪金机制、版本更新、角色建议、玩法模式、系统BUG、优化反馈、运营策略、新手引导、社区讨论、游戏评价、竞技公平\n"
+                    "要求：\n"
+                    "1. **严禁输出列表或解释**。仅输出标准集里的一个名称，不要加任何标点、拼音或多余字符。\n"
+                    "2. 如果内容极其复杂无法归纳，请返回'其他'。\n\n"
                     f"评论内容：\n{reviews[:2000]}"
                 )
                 
@@ -141,11 +140,6 @@ def summarize_cluster(reviews):
                     raise Exception("Empty response from Gemini")
                     
                 label = response.text.strip().replace('"', '').replace("'", "")
-                
-                # Post-process to ensure star injection if missing
-                if label and not label.startswith("****"):
-                    label = re.sub(r'\(.*?\)', '', label)
-                    label = f"**** {label.strip()} ****"
                 
                 if label:
                     last_successful_model = model_name

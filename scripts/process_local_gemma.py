@@ -57,10 +57,12 @@ def summarize_cluster_local(content_text):
         return None
 
     prompt = (
-        "你是一个游戏社区分析员。请通过以下多条评论，提取最核心、最具代表性的一个话题标签。\n"
+        "你是一个游戏社区分析员。请从以下【标准标签集】中选择一个最准确的单一标签来描述这组评论的主题：\n"
+        "【标准标签集】：氪金机制、版本更新、角色建议、玩法模式、系统BUG、优化反馈、运营策略、新手引导、社区讨论、游戏评价、竞技公平\n"
         "要求：\n"
-        "1. 仅输出一个中文标签（2-8字），不要有任何列表、解释、拼音、引注或字数说明。\n"
-        "2. 格式必须包含四个星号，如：**** 话题名称 ****\n\n"
+        "1. 仅输出标签名称，不要有任何修饰词、解释、标点或引注。\n"
+        "2. 严禁输出思考过程（thought process）。\n"
+        "3. 必须从标准集中选择，若无法确定请返回'其他'。\n\n"
         f"评论内容预览：\n{content_text[:2000]}"
     )
 
@@ -85,11 +87,15 @@ def summarize_cluster_local(content_text):
         with urllib.request.urlopen(req, timeout=120) as resp:
             result = json.loads(resp.read().decode())
             label = result["choices"][0]["message"]["content"].strip()
-            # Basic cleanup: take first line and ensure stars
+            
+            # Clean up 'thought' tokens or internal reasoning patterns
+            import re
+            label = re.sub(r'<\|.*?\|>', '', label)
+            label = label.replace('thought', '').replace('|', '').strip()
+
+            # Basic cleanup: take first line
             label = label.split('\n')[0].strip()
-            if not label.startswith("****"):
-                label = f"**** {label} ****"
-            return label
+            return label if label else "其他"
     except Exception as e:
         print(f"❌ Failed to summarize cluster: {e}")
         return None
