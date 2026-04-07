@@ -17,7 +17,8 @@ A professional public sentiment monitoring and sentiment analysis system specifi
   - **Bahamut Forum (Traditional Chinese)**: Specialized logic for the TW/HK community with anti-bot bypass support.
 - **🧠 Advanced NLP & Sentiment Engine**:
   - **Refinement Sentiment Analysis**: Hybrid `SnowNLP` + domain-specific rule engine. Optimized for gaming slang (e.g., "骗氪", "拉胯", "寄了", "傻逼").
-  - **Semantic Panorama & Full Context Search**: Visualizes public opinion and dynamically organizes community chats and reviews using **Google Gemini 2.0 Flash Embeddings**.
+  - **Local AI Engine (Gemma 4)**: Support for fully offline semantic analysis and tagging using a local llama-server. No API fees or data privacy concerns.
+  - **Semantic Panorama**: Visualizes public opinion and dynamically organizes community chats and reviews using **Gemma 4** or **Google Gemini 2.0** embeddings.
   - **Official Announcement Filtering**: Robust detection of official rules and bot messages.
   - **Multi-Entity Attribution**: Clause-level sentiment analysis for precise tagging of heroes or system aspects.
 - **Interactive Visualization & Reporting**:
@@ -32,8 +33,9 @@ A professional public sentiment monitoring and sentiment analysis system specifi
    playwright install chromium
    ```
 
-2. **Security Configuration**:
-   Ensure `GEMINI_API_KEY` is set in `.env` for AI features.
+2. **AI Configuration (Pick one)**:
+   - **Cloud (Gemini)**: Set `GEMINI_API_KEY` in `.env`.
+   - **Local (Gemma 4)**: Ensure the local inference server (llama-server) is running at `127.0.0.1:8080`, then run `python scripts/process_local_gemma.py`.
 
 3. **Launch Web Dashboard**:
    ```bash
@@ -50,6 +52,8 @@ A professional public sentiment monitoring and sentiment analysis system specifi
 
 ```
 fivecross-sentiment-analysis/
+├── bin/
+│   └── llama-cpp/         # Local AI Inference Kernels
 ├── app/
 │   └── web_ui.py          # Streamlit Analysis dashboard
 ├── config/
@@ -67,7 +71,8 @@ fivecross-sentiment-analysis/
 │   └── jump_chats.db      # Community chat database
 ├── reports/               # Markdown analysis reports
 ├── scripts/
-│   └── import_discord.py  # Standalone chat importer
+│   ├── import_discord.py  # Standalone chat importer
+│   └── process_local_gemma.py # Local AI Analysis Pipeline
 └── main.py                # Unified CLI entry point
 ```
 
